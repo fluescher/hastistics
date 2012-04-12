@@ -1,19 +1,19 @@
 Name:           Hastistics
 Version:        0.0.1
-Cabal-Version:  >= 1.2
+Cabal-Version:  >= 1.9
 License:        LGPL-3
 License-File:   LICENSE
 Author:         Florian Luescher, Patrick Walther, Matthias Brun
 Description:    A statistics package for Haskell
+Build-type:     Simple
 
 Library
-    Build-Depends:      base,HUnit
+    Build-Depends:      base
     HS-Source-Dirs:     src
     Exposed-Modules:    Hastistics
-    Ghc-options:        -Wall
+    Ghc-Options:        -Wall
 
-Test-suite tests
+Test-suite test
     Type:               exitcode-stdio-1.0
-    Hs-source-dirs:     tests
-    Main-is:            tests.hs
-    Build-depends:      base
+    Main-is:            tests/Tests.hs
+    Build-Depends:      base, HUnit, Hastistics
