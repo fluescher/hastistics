@@ -10,3 +10,10 @@ Library
     Build-Depends:      base,HUnit
     HS-Source-Dirs:     src
     Exposed-Modules:    Hastistics
+    Ghc-options:        -Wall
+
+Test-suite tests
+    Type:               exitcode-stdio-1.0
+    Hs-source-dirs:     tests
+    Main-is:            tests.hs
+    Build-depends:      base
