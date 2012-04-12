@@ -1,7 +1,12 @@
 Name:           Hastistics
 Version:        0.0.1
-License:        GPLv3
+Cabal-Version:  >= 1.2
+License:        GPL-3
 License-File:   LICENSE
 Author:         Florian Luescher, Patrick Walther, Matthias Brun
 Description:    A statistics package for Haskell
 
+Library
+    Build-Depends:      base,HUnit
+    HS-Source-Dirs:     src
+    Exposed-Modules:    Hastistics
