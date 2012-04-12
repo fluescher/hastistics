@@ -1,0 +1,7 @@
+Name:           Hastistics
+Version:        0.0.1
+License:        GPLv3
+License-File:   LICENSE
+Author:         Florian Luescher, Patrick Walther, Matthias Brun
+Description:    A statistics package for Haskell
+
