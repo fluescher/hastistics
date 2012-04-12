@@ -14,3 +14,6 @@ test: build
 
 install:
 	@cabal install --user
+
+haddock: configure
+	@cabal haddock

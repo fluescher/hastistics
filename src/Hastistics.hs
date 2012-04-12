@@ -1,9 +1,8 @@
 module Hastistics where
 
-
+-- |This is a simple haddock comment. generate with make haddock 
 data Blubb = Blubber
      deriving (Show)
 
--- test of unit testing framework
 t :: Int
 t = 5
