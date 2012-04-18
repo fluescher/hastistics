@@ -6,13 +6,18 @@ import Test.HUnit
 
 import Hastistics.Data
 
--- Test function
-testListTable   = TestCase $ assertEqual "Test list conversion" 
+
+testListTableData   = ListTable ["One", "Other"] [[2, 1]]
+
+-- Test functions
+testListTable       = TestCase $ assertEqual "Test list conversion" 
                                          [HSIntCol 2, HSIntCol 1]
-                                         ( valuesOf $ head (dataOf (ListTable ["One", "Other"] [[2, 1]])))
+                                         (valuesOf $ head (dataOf testListTableData))
+
+testFrom            = TestCase $ assertBool "No constraints expected." (length (constraints  (from testListTableData)) == 0)
 
 -- Register test functions here
-listOfTests = [ testListTable ]
+listOfTests = [ testListTable, testFrom ]
 
 main = do 
           (Counts cases tries errors failures) <- runTestTT $ TestList listOfTests
