@@ -4,14 +4,15 @@ import System.Exit (exitSuccess, exitFailure)
 import System.IO (stdout)
 import Test.HUnit
 
-import Hastistics (t)
+import Hastistics.Data
 
 -- Test function
-testTest = TestCase $ assertEqual "Test of the tests" 5 Hastistics.t
-
+testListTable   = TestCase $ assertEqual "Test list conversion" 
+                                         [HSIntCol 2, HSIntCol 1]
+                                         ( valuesOf $ head (dataOf (ListTable ["One", "Other"] [[2, 1]])))
 
 -- Register test functions here
-listOfTests = [ testTest ]
+listOfTests = [ testListTable ]
 
 main = do 
           (Counts cases tries errors failures) <- runTestTT $ TestList listOfTests
