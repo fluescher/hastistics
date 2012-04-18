@@ -10,7 +10,8 @@ Build-type:     Simple
 Library
     Build-Depends:      base
     HS-Source-Dirs:     src
-    Exposed-Modules:    Hastistics, Hastistics.Distributions
+    Exposed-Modules:    Hastistics, Hastistics.Distributions, Hastistics.Data, 
+                        Hastistics.Data.CSV
     Ghc-Options:        -Wall
 
 Test-suite test
