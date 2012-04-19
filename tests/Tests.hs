@@ -11,7 +11,7 @@ testListTableData   = ListTable ["One", "Other"] [[2, 1]]
 
 -- Test functions
 testListTable       = TestCase $ assertEqual "Test list conversion" 
-                                         [HSIntCol 2, HSIntCol 1]
+                                         [HSInt 2, HSInt 1]
                                          (valuesOf $ head (dataOf testListTableData))
 
 testFrom            = TestCase $ assertBool "No constraints expected." (length (constraints  (from testListTableData)) == 0)
