@@ -33,6 +33,20 @@ instance HSField HSStaticField where
     val (HSStaticField v)   = v
     update f _              = f
 
+data HSValueOfField = HSValueOfField String HSValue
+
+instance HSField HSValueOfField where
+    val     (HSValueOfField _ v)    = v 
+    update  (HSValueOfField h _) r  = HSValueOfField h (fieldValueOf h r)
+
+
+data HSAvgField = HSAvgField String HSValue Int
+
+instance HSField HSAvgField where
+    val     (HSAvgField _ su cnt)   = su Hastistics.Data./ HSDouble (fromIntegral cnt)
+    update  (HSAvgField h su cnt) r = HSAvgField h (su Hastistics.Data.+ (fieldValueOf h r)) (1 Prelude.+ cnt)
+
+
 data HSFieldHolder = forall a. HSField a => HSFieldHolder a
 
 pack    :: HSField a => a -> HSFieldHolder
@@ -80,24 +94,6 @@ instance HSTable t => HSTable (HSReport t) where
     headersOf = headers
     colsOf    = cols
     dataOf    = rows
-
-
-data HSValueOfField = HSValueOfField String HSValue
-
-instance HSField HSValueOfField where
-    val     (HSValueOfField _ v)    = v 
-    update  (HSValueOfField h _) r  = HSValueOfField h (fieldValueOf h r)
-
-
-data HSAvgField = HSAvgField String HSValue Int
-
-instance HSField HSAvgField where
-    val     (HSAvgField _ su cnt)   = su Hastistics.Data./ HSDouble (fromIntegral cnt)
-    update  (HSAvgField h su cnt) r = HSAvgField h (su Hastistics.Data.+ (fieldValueOf h r)) (1 Prelude.+ cnt)
-
-
-
-
 
 
 {- |Starting Point for every report run. Creates a new HSReport from 
