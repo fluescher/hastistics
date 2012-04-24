@@ -22,7 +22,6 @@ data HSValue
 (/) _               _              = None
 
 
-
 class HSField f where
     val         :: f -> HSValue
     update      :: f -> HSRow -> f
@@ -95,6 +94,10 @@ instance HSTable t => HSTable (HSReport t) where
     colsOf    = cols
     dataOf    = rows
 
+{- |Adds a simple result column to the report. This column contains the
+unmodified value of the source column. -}
+valueOf     :: HSTable t => String -> HSReport t -> HSReport t
+valueOf h r = r{cols= (pack (HSValueOfField h None)):(cols r)}
 
 {- |Starting Point for every report run. Creates a new HSReport from 
 a HSTable. -}
@@ -102,7 +105,7 @@ from        :: HSTable t => t -> HSReport t
 from table  =  HSReport {source=table, cols=[], constraints=[], rows=[], headers=[]}
 
 {- |Used to filter input data of a HSReport. -}
-when     :: HSTable t => (HSRow -> Bool) -> HSReport t -> HSReport t
+when        :: HSTable t => (HSRow -> Bool) -> HSReport t -> HSReport t
 when f report = report {constraints=f:(constraints report)}
 
 data ListTable   = ListTable [String] [[Int]]
@@ -110,5 +113,8 @@ instance HSTable ListTable where
     headersOf (ListTable hs _) = hs 
     colsOf (ListTable _  _)    = []
     dataOf (ListTable hs vals)  = [HSValueRow hs [pack (HSStaticField (HSInt f)) | f <- r ] | r <- vals]
+
+
+
 
 
