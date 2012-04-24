@@ -9,10 +9,18 @@ data HSValue
    | None
    deriving(Eq, Show)
 
+
+(+)     :: HSValue -> HSValue -> HSValue
+(+) (HSString sa)    (HSString sb) = HSString (sa Prelude.++ sb)
+(+) (HSInt ia)       (HSInt ib)    = HSInt (ia Prelude.+ ib)
+(+) (HSDouble da)    (HSDouble db) = HSDouble (da Prelude.+ db)
+(+) _               _              = None
+
+
 class HSField f where
     val         :: f -> HSValue
     update      :: f -> HSRow -> f
-    update fi r =  fi
+    update fi _ =  fi
 
 data HSStaticField  = HSStaticField HSValue
 instance HSField HSStaticField where
