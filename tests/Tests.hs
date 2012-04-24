@@ -7,7 +7,13 @@ import Test.HUnit
 import Hastistics.Data
 
 
-testListTableData   = ListTable ["One", "Other"] [[2, 1]]
+testListTableData   = ListTable ["One", "Other"] [[2, 1], [1,2]]
+testList            = testListTableData
+
+simplestReport      = valueOf "One" $ sumOf "One" $ avgOf "Other" $
+                      from testList
+
+
 
 -- Test functions
 testListTable       = TestCase $ assertEqual "Test list conversion" 
@@ -16,8 +22,12 @@ testListTable       = TestCase $ assertEqual "Test list conversion"
 
 testFrom            = TestCase $ assertBool "No constraints expected." (length (constraints  (from testListTableData)) == 0)
 
+
+testValueOfColumn   = TestCase $ assertEqual "Should get the raw value." [[HSInt 2, HSInt 3, HSDouble 1.5]] [valuesOf r | r <- dataOf (eval simplestReport )]
+
+
 -- Register test functions here
-listOfTests = [ testListTable, testFrom ]
+listOfTests = [ testListTable, testFrom, testValueOfColumn]
 
 main = do 
           (Counts cases tries errors failures) <- runTestTT $ TestList listOfTests
