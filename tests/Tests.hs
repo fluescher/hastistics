@@ -7,13 +7,21 @@ import Test.HUnit
 import Hastistics.Data
 
 
-testListTableData   = ListTable ["One", "Other"] [[2, 1], [1,2]]
+testListTableData   = ListTable ["One", "Other"] [[2,1], [1,2]]
 testList            = testListTableData
 
 simplestReport      = valueOf "One" $ sumOf "One" $ avgOf "Other" $
                       from testList
 
+constraintReport    = valueOf "One" $ valueOf "Other" $
+                      when (\r -> (fieldValueOf "One" r) == HSInt 1) $
+                      from testList
 
+
+emptyReport         = valueOf "One" $ sumOf "One" $ avgOf "One" $
+                      when (\r -> (fieldValueOf "One" r)    == HSInt 1) $
+                      when (\r -> (fieldValueOf "Other" r)  == HSInt 1) $
+                      from testList
 
 -- Test functions
 testListTable       = TestCase $ assertEqual "Test list conversion" 
@@ -26,8 +34,13 @@ testFrom            = TestCase $ assertBool "No constraints expected." (length (
 testValueOfColumn   = TestCase $ assertEqual "Should get the raw value." [[HSInt 2, HSInt 3, HSDouble 1.5]] [valuesOf r | r <- dataOf (eval simplestReport )]
 
 
+testConstraint      = TestCase $ assertEqual "Should have filtered out values" [[HSInt 1, HSInt 2]] [valuesOf r | r <- dataOf (eval constraintReport)]
+
+testToStrict        = TestCase $ assertEqual "Should have filtered out all values" [[None, HSInt 0, None]] [valuesOf r | r <- dataOf (eval emptyReport)]
+
+
 -- Register test functions here
-listOfTests = [ testListTable, testFrom, testValueOfColumn]
+listOfTests = [testListTable, testFrom, testValueOfColumn, testConstraint, testToStrict]
 
 main = do 
           (Counts cases tries errors failures) <- runTestTT $ TestList listOfTests

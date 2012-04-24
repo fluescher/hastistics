@@ -19,6 +19,8 @@ data HSValue
 (+) _               _              = None
 
 (/)     :: HSValue -> HSValue -> HSValue
+(/) _               (HSInt 0)      = None
+(/) _               (HSDouble 0)   = None
 (/) (HSInt ia)      (HSInt ib)     = HSInt (div ia ib)
 (/) (HSDouble da)   (HSDouble db)  = HSDouble (da Prelude./ db)
 (/) (HSDouble da)   (HSInt ib)     = HSDouble (da Prelude./ (fromIntegral ib))
@@ -107,8 +109,14 @@ data HSReport
               }
 
 
-addCalcCol  :: HSField f => HSReport -> f -> HSReport
+addCalcCol      :: HSField f => HSReport -> f -> HSReport
 addCalcCol r f  = r{cols = (pack f):(cols r)} 
+
+addConstraint   :: HSReport -> (HSRow -> Bool) -> HSReport
+addConstraint r f = r{constraints=f:(constraints r)}
+
+shouldInclude   :: HSReport -> HSRow -> Bool
+shouldInclude report row = and [cond row | cond <- constraints report]
 
 {- |Define the HSReport as a instance of a HSTable. This makes sure that results of a report can be 
 used as input data in other reports. -}
@@ -138,7 +146,7 @@ from table  =  HSReport {source=HSTableHolder table, cols=[], constraints=[], ro
 
 {- |Used to filter input data of a HSReport. -}
 when        :: (HSRow -> Bool) -> HSReport -> HSReport
-when f report = report {constraints=f:(constraints report)}
+when f report = addConstraint report f
 
 rowsFromHolder    :: HSTableHolder -> [HSRow]
 rowsFromHolder (HSTableHolder tab) = dataOf tab
@@ -151,7 +159,7 @@ eval report = report {rows=[HSValueRow (headers report) (evalReport report dat p
 
 evalReport  :: HSReport -> [HSRow] -> [HSFieldHolder] -> [HSFieldHolder]
 evalReport _      []     fs = fs
-evalReport report (r:rs) fs = evalReport report rs updatedFields
-                              where updatedFields = [pack (update c r) | (HSFieldHolder c) <- fs]
+evalReport report (r:rs) fs | shouldInclude report r   = evalReport report rs [pack (update c r) | (HSFieldHolder c) <- fs]
+                            | otherwise                = evalReport report rs fs
 
 
