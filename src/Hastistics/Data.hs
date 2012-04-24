@@ -16,6 +16,12 @@ data HSValue
 (+) (HSDouble da)    (HSDouble db) = HSDouble (da Prelude.+ db)
 (+) _               _              = None
 
+(/)     :: HSValue -> HSValue -> HSValue
+(/) (HSInt ia)      (HSInt ib)     = HSInt (div ia ib)
+(/) (HSDouble da)   (HSDouble db)  = HSDouble (da Prelude./ db)
+(/) _               _              = None
+
+
 
 class HSField f where
     val         :: f -> HSValue
@@ -81,6 +87,18 @@ data HSValueOfField = HSValueOfField String HSValue
 instance HSField HSValueOfField where
     val     (HSValueOfField _ v)    = v 
     update  (HSValueOfField h _) r  = HSValueOfField h (fieldValueOf h r)
+
+
+data HSAvgField = HSAvgField String HSValue Int
+
+instance HSField HSAvgField where
+    val     (HSAvgField _ su cnt)   = su Hastistics.Data./ HSDouble (fromIntegral cnt)
+    update  (HSAvgField h su cnt) r = HSAvgField h (su Hastistics.Data.+ (fieldValueOf h r)) (1 Prelude.+ cnt)
+
+
+
+
+
 
 {- |Starting Point for every report run. Creates a new HSReport from 
 a HSTable. -}
