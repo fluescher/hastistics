@@ -1,3 +1,5 @@
+{-# LANGUAGE ExistentialQuantification #-}
+
 module Hastistics.Data where
 
 data HSValue
@@ -7,45 +9,53 @@ data HSValue
    | None
    deriving(Eq, Show)
 
-data HSField
-   = HSStaticField      HSValue
-   | HSCalcField  HSValue (HSRow -> HSField -> HSField)
+class HSField f where
+    val         :: f -> HSValue
+    update      :: f -> HSRow -> f
+    update fi r =  fi
 
-{- |Get the value out of a HSField -}
-val :: HSField -> HSValue
-val (HSStaticField v)   = v
-val (HSCalcField v _)   = v
+data HSStaticField  = HSStaticField HSValue
+instance HSField HSStaticField where
+    val (HSStaticField v)   = v
+    update f _              = f
+
+data HSFieldHolder = forall a. HSField a => HSFieldHolder a
+
+pack    :: HSField a => a -> HSFieldHolder
+pack    = HSFieldHolder
+
 
 
 {- |Row in a table. Consists of a list of columns -}
 data HSRow      
-   = HSValueRow          [String] [HSField] 
+   = HSValueRow  [String] [HSFieldHolder] 
 
 {- |Get the values out of a HSRow. -}
 valuesOf :: HSRow -> [HSValue]
-valuesOf (HSValueRow _ vs)    = [val v | v <- vs]
+valuesOf (HSValueRow _ vs)    = [val v | (HSFieldHolder v) <- vs]
 
 
 fieldValueOf :: String -> HSRow -> HSValue
-fieldValueOf _ (HSValueRow _ [])            = None
-fieldValueOf _ (HSValueRow [] _)            = None
-fieldValueOf col (HSValueRow (h:hs) (v:vs)) | h == col   = val v
-                                            | otherwise  = fieldValueOf col (HSValueRow hs vs)
+fieldValueOf _ (HSValueRow _ [])                            = None
+fieldValueOf _ (HSValueRow [] _)                            = None
+fieldValueOf col (HSValueRow (h:hs) ((HSFieldHolder v):vs)) | h == col   = val v
+                                                            | otherwise  = fieldValueOf col (HSValueRow hs vs)
 
 
 {- |Type class defining the interface to a Table implementation. Use this type class if you want to
 define your own data sources for the Hastistics framework. -}
 class HSTable t where
     headersOf   :: t -> [String]
-    colsOf      :: t -> [HSField]
+    colsOf      :: t -> [HSFieldHolder]
     dataOf      :: t -> [HSRow]
+
 
 {- |Report structure storing all metainformation about a report. -}    
 data (HSTable t) => HSReport t
    = HSReport {
                     source      :: t,
                     headers     :: [String],
-                    cols        :: [HSField],
+                    cols        :: [HSFieldHolder],
                     rows        :: [HSRow],
                     constraints :: [(HSRow -> Bool)]
               }
@@ -58,10 +68,11 @@ instance HSTable t => HSTable (HSReport t) where
     dataOf    = rows
 
 
-valueOfUpdater :: String -> HSRow -> HSField -> HSValue
-valueOfUpdater _ _ (HSStaticField v)            = v
-valueOfUpdater col row (HSCalcField _  _)  = fieldValueOf col row
+data HSValueOfField = HSValueOfField String HSValue
 
+instance HSField HSValueOfField where
+    val     (HSValueOfField _ v)    = v 
+    update  (HSValueOfField h _) r  = HSValueOfField h (fieldValueOf h r)
 
 {- |Starting Point for every report run. Creates a new HSReport from 
 a HSTable. -}
@@ -76,6 +87,6 @@ data ListTable   = ListTable [String] [[Int]]
 instance HSTable ListTable where
     headersOf (ListTable hs _) = hs 
     colsOf (ListTable _  _)    = []
-    dataOf (ListTable hs vals)  = [HSValueRow hs [HSStaticField (HSInt f) | f <- r ] | r <- vals]
+    dataOf (ListTable hs vals)  = [HSValueRow hs [pack (HSStaticField (HSInt f)) | f <- r ] | r <- vals]
 
 
