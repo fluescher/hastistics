@@ -1,6 +1,11 @@
 {-# LANGUAGE ExistentialQuantification #-}
 
-module Hastistics.Data where
+module Hastistics.Data
+       (HSValue(HSString, HSInt, HSDouble, None),
+        HSTable, ListTable(ListTable), HSReport,
+        from, when, avgOf, valueOf, sumOf,
+        dataOf, valuesOf, fieldValueOf,
+        eval) where
 
 data HSValue
    = HSString String
@@ -147,9 +152,6 @@ from table  =  HSReport {source=HSTableHolder table, cols=[], constraints=[], ro
 {- |Used to filter input data of a HSReport. -}
 when        :: (HSRow -> Bool) -> HSReport -> HSReport
 when f report = addConstraint report f
-
-rowsFromHolder    :: HSTableHolder -> [HSRow]
-rowsFromHolder (HSTableHolder tab) = dataOf tab
 
 eval        :: HSReport -> HSReport
 eval report = report {rows=[HSValueRow (headers report) (evalReport report dat prototype)]}

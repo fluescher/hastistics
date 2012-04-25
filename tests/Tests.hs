@@ -28,9 +28,6 @@ testListTable       = TestCase $ assertEqual "Test list conversion"
                                          [HSInt 2, HSInt 1]
                                          (valuesOf $ head (dataOf testListTableData))
 
-testFrom            = TestCase $ assertBool "No constraints expected." (length (constraints  (from testListTableData)) == 0)
-
-
 testValueOfColumn   = TestCase $ assertEqual "Should get the raw value." [[HSInt 2, HSInt 3, HSDouble 1.5]] [valuesOf r | r <- dataOf (eval simplestReport )]
 
 
@@ -40,7 +37,7 @@ testToStrict        = TestCase $ assertEqual "Should have filtered out all value
 
 
 -- Register test functions here
-listOfTests = [testListTable, testFrom, testValueOfColumn, testConstraint, testToStrict]
+listOfTests = [testListTable, testValueOfColumn, testConstraint, testToStrict]
 
 main = do 
           (Counts cases tries errors failures) <- runTestTT $ TestList listOfTests
