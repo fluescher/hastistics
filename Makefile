@@ -17,3 +17,6 @@ install:
 
 haddock: configure
 	@cabal haddock
+
+repl:
+	ghci src/Hastistics.hs src/Hastistics/Data.hs
