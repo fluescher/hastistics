@@ -154,14 +154,15 @@ when        :: (HSRow -> Bool) -> HSReport -> HSReport
 when f report = addConstraint report f
 
 eval        :: HSReport -> HSReport
-eval report = report {rows=[HSValueRow (headers report) (evalReport report dat prototype)]}
-              where dat                       = toDat (source report)
+eval report = report {rows=[HSValueRow (headers report) (evalReport dat prototype)]}
+              where dat                       = filter predicate (toDat (source report))
                     toDat (HSTableHolder tab) = dataOf tab
                     prototype                 = cols report
+                    predicate                 = shouldInclude report
 
-evalReport  :: HSReport -> [HSRow] -> [HSFieldHolder] -> [HSFieldHolder]
-evalReport _      []     fs = fs
-evalReport report (r:rs) fs | shouldInclude report r   = evalReport report rs [pack (update c r) | (HSFieldHolder c) <- fs]
-                            | otherwise                = evalReport report rs fs
+evalReport  :: [HSRow] -> [HSFieldHolder] -> [HSFieldHolder]
+evalReport []     fs = fs
+evalReport (r:rs) fs = evalReport rs [pack (update c r) | (HSFieldHolder c) <- fs]
+                     
 
 
