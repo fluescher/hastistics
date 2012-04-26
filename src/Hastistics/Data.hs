@@ -101,6 +101,19 @@ instance HSTable ListTable where
     dataOf (ListTable hs vals)  = [HSValueRow hs [pack (HSStaticField (HSInt f)) | f <- r ] | r <- vals]
 
 
+data HSResult   = HSEmptyResult
+                | HSSingleResult HSRow
+                | HSGroupedResult [HSRow]
+
+reportResult   :: HSReport -> [HSRow]
+reportResult r = resultRows (rows r)
+
+resultRows     :: HSResult -> [HSRow]
+resultRows HSEmptyResult        = []
+resultRows (HSSingleResult r)   = [r]
+resultRows (HSGroupedResult rs) = rs
+
+
 data HSTableHolder = forall a. HSTable a => HSTableHolder a
 
 {- |Report structure storing all metainformation about a report. -}    
@@ -109,10 +122,9 @@ data HSReport
                     source      :: HSTableHolder,
                     headers     :: [String],
                     cols        :: [HSFieldHolder],
-                    rows        :: [HSRow],
+                    rows        :: HSResult,
                     constraints :: [(HSRow -> Bool)]
               }
-
 
 addCalcCol      :: HSField f => HSReport -> f -> HSReport
 addCalcCol r f  = r{cols = (pack f):(cols r)} 
@@ -128,7 +140,7 @@ used as input data in other reports. -}
 instance HSTable HSReport where
     headersOf = headers
     colsOf    = cols
-    dataOf    = rows
+    dataOf    = reportResult
 
 {- |Adds a simple result column to the report. This column contains the
 unmodified value of the source column. -}
@@ -136,10 +148,14 @@ valueOf     :: String -> HSReport -> HSReport
 valueOf h r = addCalcCol r field
               where field = HSValueOfField h None
 
+{- |Adds a result column to the report. This column sums the values 
+of the provided source column. -}
 sumOf       :: String -> HSReport -> HSReport
 sumOf   h r = addCalcCol r field
               where field = HSSumField h (HSInt 0)
 
+{- |Adds a result column to the report. This column calculates the average
+value of the value. -}
 avgOf       :: String -> HSReport -> HSReport
 avgOf   h r = addCalcCol r field
               where field = HSAvgField h (HSDouble 0) 0
@@ -147,14 +163,14 @@ avgOf   h r = addCalcCol r field
 {- |Starting Point for every report run. Creates a new HSReport from 
 a HSTable. -}
 from        :: HSTable t => t -> HSReport
-from table  =  HSReport {source=HSTableHolder table, cols=[], constraints=[], rows=[], headers=[]}
+from table  =  HSReport {source=HSTableHolder table, cols=[], constraints=[], rows=HSEmptyResult, headers=[]}
 
 {- |Used to filter input data of a HSReport. -}
 when        :: (HSRow -> Bool) -> HSReport -> HSReport
 when f report = addConstraint report f
 
 eval        :: HSReport -> HSReport
-eval report = report {rows=[HSValueRow (headers report) (evalReport dat prototype)]}
+eval report = report {rows=HSSingleResult (HSValueRow (headers report) (evalReport dat prototype))}
               where dat                       = filter predicate (toDat (source report))
                     toDat (HSTableHolder tab) = dataOf tab
                     prototype                 = cols report
