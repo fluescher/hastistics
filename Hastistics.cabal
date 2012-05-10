@@ -8,7 +8,7 @@ Description:    A statistics package for Haskell
 Build-type:     Simple
 
 Library
-    Build-Depends:      base
+    Build-Depends:      base, containers
     HS-Source-Dirs:     src
     Exposed-Modules:    Hastistics, Hastistics.Distributions, Hastistics.Data, 
                         Hastistics.Data.CSV

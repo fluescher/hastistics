@@ -7,6 +7,8 @@ module Hastistics.Data
         dataOf, valuesOf, fieldValueOf,
         eval) where
 
+import qualified Data.Map as Map
+
 data HSValue
    = HSString String
    | HSInt Int
@@ -92,28 +94,26 @@ fieldValueOf col (HSValueRow (h:hs) ((HSFieldHolder v):vs)) | h == col   = val v
 define your own data sources for the Hastistics framework. -}
 class HSTable t where
     headersOf   :: t -> [Key]
-    colsOf      :: t -> [HSFieldHolder]
     dataOf      :: t -> [HSRow]
     lookup	:: String -> Key -> t -> [HSRow]
 
 data ListTable   = ListTable [Key] [[Int]]
 instance HSTable ListTable where
     headersOf (ListTable hs _) = hs 
-    colsOf (ListTable _  _)    = []
     dataOf (ListTable hs vals)  = [HSValueRow hs [pack (HSStaticField (HSInt f)) | f <- r ] | r <- vals]
     lookup _ _ _	       = []
 
 data HSResult   = HSEmptyResult
                 | HSSingleResult HSRow
-                | HSGroupedResult [HSRow]
+                | HSGroupedResult Key HSRow (Map.Map HSValue HSRow)
 
 reportResult   :: HSReport -> [HSRow]
 reportResult r = resultRows (rows r)
 
 resultRows     :: HSResult -> [HSRow]
-resultRows HSEmptyResult        = []
-resultRows (HSSingleResult r)   = [r]
-resultRows (HSGroupedResult rs) = rs
+resultRows HSEmptyResult            = []
+resultRows (HSSingleResult r)       = [r]
+resultRows (HSGroupedResult _ _ rs) = [row | (_, row) <- Map.toList rs]
 
 
 data HSTableHolder = forall a. HSTable a => HSTableHolder a
@@ -142,7 +142,6 @@ shouldInclude report row = and [cond row | cond <- constraints report]
 used as input data in other reports. -}
 instance HSTable HSReport where
     headersOf = headers
-    colsOf    = cols
     dataOf    = reportResult
     lookup _ _ _    = []
 
@@ -177,23 +176,41 @@ when        :: (HSRow -> Bool) -> HSReport -> HSReport
 when f report = addConstraint report f
 
 eval        :: HSReport -> HSReport
-eval report | isGrouped report  = evalSingle report
-            | otherwise         = evalSingle report
+eval report | isGrouped report  = evalReport (report{rows= HSGroupedResult (groupKeyFor (groupKey report)) (HSValueRow (headers report)(cols report)) Map.empty})
+            | otherwise         = evalReport (report{rows= HSSingleResult (HSValueRow (headers report) (cols report))})
+
+
+groupKeyFor :: (Maybe Key) -> Key
+groupKeyFor (Just k) = k
+groupKeyFor _ = error "No group by key defined"
 
 isGrouped  :: HSReport -> Bool
 isGrouped  report = not ((groupKey report) == Nothing)
 
-evalSingle :: HSReport -> HSReport
-evalSingle report = report {rows=HSSingleResult (HSValueRow (headers report) (evalReport dat prototype))}
-              where dat                       = filter predicate (toDat (source report))
-                    toDat (HSTableHolder tab) = dataOf tab
-                    prototype                 = cols report
-                    predicate                 = shouldInclude report
+
+updateRow :: HSRow -> HSRow -> HSRow
+updateRow (HSValueRow hs fs) row = HSValueRow hs [pack (update c row) | (HSFieldHolder c) <- fs]
+
+updateResults :: HSResult -> [HSRow] -> HSResult
+updateResults res (r:rs)  = updateResults (updateResult res r) rs
+updateResults res []      = res
+
+updateResult :: HSResult -> HSRow -> HSResult
+updateResult (HSSingleResult row) dat           = HSSingleResult (updateRow row dat)
+updateResult (HSGroupedResult k proto rs) dat   = HSGroupedResult k proto (Map.alter f (fieldValueOf k dat) rs)
+                                                  where f = updateOrCreate proto dat
+updateResult res _ = res
+
+updateOrCreate :: HSRow -> HSRow -> (Maybe HSRow) -> (Maybe HSRow)
+updateOrCreate _   dat (Just row) = Just (updateRow row dat)
+updateOrCreate row dat Nothing    = Just (updateRow row dat)
 
 
-evalReport  :: [HSRow] -> [HSFieldHolder] -> [HSFieldHolder]
-evalReport []     fs = fs
-evalReport (r:rs) fs = evalReport rs [pack (update c r) | (HSFieldHolder c) <- fs]
-                     
+evalReport :: HSReport -> HSReport
+evalReport report = report {rows= updateResults (rows report) dat}
+                  where dat                       = filter predicate (toDat (source report))
+                        toDat (HSTableHolder tab) = dataOf tab
+                        predicate                 = shouldInclude report
+
 
 
