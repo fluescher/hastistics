@@ -3,7 +3,7 @@
 module Hastistics.Data
        (HSValue(HSString, HSInt, HSDouble, None),
         HSTable, ListTable(ListTable), HSReport,
-        from, when, avgOf, valueOf, sumOf,
+        from, groupBy, when, avgOf, valueOf, sumOf,
         dataOf, valuesOf, fieldValueOf,
         eval) where
 
@@ -12,8 +12,9 @@ data HSValue
    | HSInt Int
    | HSDouble Double
    | None
-   deriving(Eq, Show)
+   deriving(Eq, Ord, Show)
 
+type Key = String
 
 (+)     :: HSValue -> HSValue -> HSValue
 (+) (HSString sa)    (HSString sb) = HSString (sa Prelude.++ sb)
@@ -73,7 +74,7 @@ pack    = HSFieldHolder
 
 {- |Row in a table. Consists of a list of columns -}
 data HSRow      
-   = HSValueRow  [String] [HSFieldHolder] 
+   = HSValueRow  [Key] [HSFieldHolder] 
 
 {- |Get the values out of a HSRow. -}
 valuesOf :: HSRow -> [HSValue]
@@ -90,16 +91,17 @@ fieldValueOf col (HSValueRow (h:hs) ((HSFieldHolder v):vs)) | h == col   = val v
 {- |Type class defining the interface to a Table implementation. Use this type class if you want to
 define your own data sources for the Hastistics framework. -}
 class HSTable t where
-    headersOf   :: t -> [String]
+    headersOf   :: t -> [Key]
     colsOf      :: t -> [HSFieldHolder]
     dataOf      :: t -> [HSRow]
+    lookup	:: String -> Key -> t -> [HSRow]
 
-data ListTable   = ListTable [String] [[Int]]
+data ListTable   = ListTable [Key] [[Int]]
 instance HSTable ListTable where
     headersOf (ListTable hs _) = hs 
     colsOf (ListTable _  _)    = []
     dataOf (ListTable hs vals)  = [HSValueRow hs [pack (HSStaticField (HSInt f)) | f <- r ] | r <- vals]
-
+    lookup _ _ _	       = []
 
 data HSResult   = HSEmptyResult
                 | HSSingleResult HSRow
@@ -120,10 +122,11 @@ data HSTableHolder = forall a. HSTable a => HSTableHolder a
 data HSReport
    = HSReport {
                     source      :: HSTableHolder,
-                    headers     :: [String],
+                    headers     :: [Key],
                     cols        :: [HSFieldHolder],
                     rows        :: HSResult,
-                    constraints :: [(HSRow -> Bool)]
+                    constraints :: [(HSRow -> Bool)],
+                    groupKey    :: Maybe Key
               }
 
 addCalcCol      :: HSField f => HSReport -> f -> HSReport
@@ -141,6 +144,7 @@ instance HSTable HSReport where
     headersOf = headers
     colsOf    = cols
     dataOf    = reportResult
+    lookup _ _ _    = []
 
 {- |Adds a simple result column to the report. This column contains the
 unmodified value of the source column. -}
@@ -160,21 +164,32 @@ avgOf       :: String -> HSReport -> HSReport
 avgOf   h r = addCalcCol r field
               where field = HSAvgField h (HSDouble 0) 0
 
+groupBy     :: Key -> HSReport -> HSReport
+groupBy k r = r {groupKey=Just k}
+
 {- |Starting Point for every report run. Creates a new HSReport from 
 a HSTable. -}
 from        :: HSTable t => t -> HSReport
-from table  =  HSReport {source=HSTableHolder table, cols=[], constraints=[], rows=HSEmptyResult, headers=[]}
+from table  =  HSReport {source=HSTableHolder table, cols=[], constraints=[], rows=HSEmptyResult, headers=[], groupKey=Nothing}
 
 {- |Used to filter input data of a HSReport. -}
 when        :: (HSRow -> Bool) -> HSReport -> HSReport
 when f report = addConstraint report f
 
 eval        :: HSReport -> HSReport
-eval report = report {rows=HSSingleResult (HSValueRow (headers report) (evalReport dat prototype))}
+eval report | isGrouped report  = evalSingle report
+            | otherwise         = evalSingle report
+
+isGrouped  :: HSReport -> Bool
+isGrouped  report = not ((groupKey report) == Nothing)
+
+evalSingle :: HSReport -> HSReport
+evalSingle report = report {rows=HSSingleResult (HSValueRow (headers report) (evalReport dat prototype))}
               where dat                       = filter predicate (toDat (source report))
                     toDat (HSTableHolder tab) = dataOf tab
                     prototype                 = cols report
                     predicate                 = shouldInclude report
+
 
 evalReport  :: [HSRow] -> [HSFieldHolder] -> [HSFieldHolder]
 evalReport []     fs = fs
