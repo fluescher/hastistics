@@ -3,7 +3,7 @@
 module Hastistics.Data
        (HSValue(HSString, HSInt, HSDouble, HSInteger, None),
         HSTable, ListTable(ListTable), HSReport,
-        HSRow(HSValueRow), HSFieldHolder,
+        HSRow(HSValueRow), HSFieldHolder(HSFieldHolder),
         from, groupBy, when, avgOf, valueOf, sumOf,
         dataOf, valuesOf, fieldValueOf,
         headersOf, Hastistics.Data.lookup,
@@ -16,6 +16,7 @@ data HSValue
    | HSInt Int
    | HSInteger Integer
    | HSDouble Double
+   | HSInteger Integer
    | None
    deriving(Eq, Ord, Show)
 
