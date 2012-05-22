@@ -11,6 +11,9 @@ instance HSTable BinominalTable where
 	dataOf (BinominalTable n p) = [toHSRow k (binopdf k n p) | k <- [0..n]]  
 	lookup _ _ _ = []
 
+instance Show BinominalTable where
+    show = showTable
+
 toHSRow :: Integer -> Double -> HSRow
 toHSRow n p = HSValueRow header [pack(HSStaticField(HSInteger n)), pack(HSStaticField(HSDouble p))]
 

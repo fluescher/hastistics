@@ -10,7 +10,14 @@ data HSValue
    | HSInteger Integer
    | HSDouble Double
    | None
-   deriving(Eq, Ord, Show)
+   deriving(Eq, Ord)
+
+instance Show HSValue where
+    show (HSString s)  = s
+    show (HSInt i)     = show i
+    show (HSInteger i) = show i
+    show (HSDouble  d) = show d
+    show None          = "None"
 
 type Key = String
 
@@ -32,23 +39,28 @@ type Key = String
 (/) _               _              = None
 
 
-class HSField f where
+class (Show f) => HSField f where
     val         :: f -> HSValue
     update      :: f -> HSRow -> f
     update fi _ =  fi
+
+showField :: (HSField a) => a -> String
+showField = show . val
 
 data HSStaticField  = HSStaticField HSValue
 instance HSField HSStaticField where
     val (HSStaticField v)   = v
     update f _              = f
-
+instance Show HSStaticField where
+    show = showField
 
 data HSValueOfField = HSValueOfField String HSValue
 instance HSField HSValueOfField where
     val     (HSValueOfField _ v)       = v 
     update  (HSValueOfField h None) r  = HSValueOfField h (fieldValueOf h r)
     update  f _                        = f
-
+instance Show HSValueOfField where
+    show = showField
 
 data HSAvgField = HSAvgField String HSValue Int
 instance HSField HSAvgField where
@@ -56,19 +68,25 @@ instance HSField HSAvgField where
     update  (HSAvgField h su cnt) r = HSAvgField h sm newCnt
                                     where sm     = (Hastistics.Data.+) su (fieldValueOf h r)
                                           newCnt = (Prelude.+) 1 cnt
+instance Show HSAvgField where
+    show = showField
+
 
 data HSSumField = HSSumField String HSValue
 instance HSField HSSumField where
     val     (HSSumField _ v)   = v
     update  (HSSumField h v) r = HSSumField h ((Hastistics.Data.+) v (fieldValueOf h r))
+instance Show HSSumField where
+    show = showField
 
 
 data HSFieldHolder = forall a. HSField a => HSFieldHolder a
 
+instance Show HSFieldHolder where
+    show (HSFieldHolder f) = show f
+
 pack    :: HSField a => a -> HSFieldHolder
 pack    = HSFieldHolder
-
-
 
 {- |Row in a table. Consists of a list of columns -}
 data HSRow      
@@ -88,16 +106,42 @@ fieldValueOf col (HSValueRow (h:hs) ((HSFieldHolder v):vs)) | h == col   = val v
 
 {- |Type class defining the interface to a Table implementation. Use this type class if you want to
 define your own data sources for the Hastistics framework. -}
-class HSTable t where
+class (Show t) => HSTable t where
     headersOf   :: t -> [Key]
     dataOf      :: t -> [HSRow]
-    lookup	:: String -> Key -> t -> [HSRow]
+    lookup	    :: String -> Key -> t -> [HSRow]
+
+showBorder      :: (Show a) => [a] -> String 
+showBorder []     = "+"
+showBorder (_:ks) = "+------------" ++ showBorder ks
+
+showHeader      :: (Show a) => [a] -> String
+showHeader ks   = (showBorder ks) ++ "\n" ++ 
+                  (showRow    ks) ++ "\n" ++
+                  (showBorder ks) 
+
+showRow         :: (Show a) => [a] -> String
+showRow []      = "|"
+showRow (k:ks)  = "| " ++ v ++ space ++ " " ++ showRow ks
+                where   v       = take 10 (show k)
+                        space   = take (10-(length v)) (repeat ' ')
+
+showRows        :: [HSRow] -> String
+showRows []     = ""
+showRows (r:rs) = showRow (valuesOf r) ++ "\n" ++ showRows rs
+
+showTable       :: HSTable t => t -> String
+showTable t     = showHeader (headersOf t) ++ "\n" ++
+                  showRows (dataOf t) ++ 
+                  showBorder (headersOf t)
 
 data ListTable   = ListTable [Key] [[Int]]
 instance HSTable ListTable where
     headersOf (ListTable hs _) = hs 
     dataOf (ListTable hs vals)  = [HSValueRow hs [pack (HSStaticField (HSInt f)) | f <- r ] | r <- vals]
     lookup _ _ _	       = []
+instance Show ListTable where
+    show = showTable
 
 data HSResult   = HSEmptyResult
                 | HSSingleResult HSRow
@@ -140,6 +184,9 @@ instance HSTable HSReport where
     headersOf = headers
     dataOf    = reportResult
     lookup _ _ _    = []
+instance Show HSReport where
+    show = showTable
+
 
 {- |Adds a simple result column to the report. This column contains the
 unmodified value of the source column. -}
