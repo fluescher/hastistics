@@ -19,4 +19,4 @@ haddock: configure
 	@cabal haddock
 
 repl:
-	ghci src/Hastistics.hs src/Hastistics/Data.hs
+	ghci src/Hastistics.hs src/Hastistics/Data.hs src/Hastistics/Distributions.hs

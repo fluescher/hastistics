@@ -5,10 +5,13 @@ import System.IO (stdout)
 import Test.HUnit
 
 import Hastistics.Data
+import Hastistics.Distributions
 
 
 testListTableData   = ListTable ["One", "Other"] [[2,1], [1,2], [2,6]]
 testList            = testListTableData
+
+testDistributionTable = DistributionTable 4 0.2
 
 simplestReport      = valueOf "One" $ sumOf "One" $ avgOf "Other" $
                       from testList
@@ -28,8 +31,14 @@ groupedReport       = valueOf "One" $ sumOf "Other" $
                       groupBy "One" $
                       from testList
 
+probabilityReport	= sumOf "p" $
+					  from testDistributionTable
+
 listValueOf rep = [valuesOf r | r <- dataOf (eval rep)]
 
+toHSInt :: HSValue -> HSValue
+toHSInt (HSDouble d) = HSInt(floor d)
+toHSInt _ = HSInt 0
 
 -- Test functions
 testListTable       = TestCase $ assertEqual "Test list conversion" 
@@ -46,9 +55,10 @@ testToStrict        = TestCase $ assertEqual "Should have filtered out all value
 
 testGroupBy         = TestCase $ assertEqual "Should be grouped" [[HSInt 1, HSInt 2], [HSInt 2, HSInt 7]] (listValueOf groupedReport)
 
+testProbability		= TestCase $ assertEqual "Should be equal to one" (HSInt 1) (toHSInt $ head $ head (listValueOf probabilityReport))
 
 -- Register test functions here
-listOfTests = [testListTable, testValueOfColumn, testConstraint, testToStrict, testGroupBy]
+listOfTests = [testListTable, testValueOfColumn, testConstraint, testToStrict, testGroupBy, testProbability]
 
 main = do 
           (Counts cases tries errors failures) <- runTestTT $ TestList listOfTests

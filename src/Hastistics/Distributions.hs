@@ -1,8 +1,9 @@
-module Hastistics.Distributions where
+module Hastistics.Distributions where 
 
-import Hastistics.Data
+import Hastistics.Data hiding ((/), (+))
 
 data DistributionTable = DistributionTable Integer Double
+header :: [String]
 header = ["k", "p"]
 
 instance HSTable DistributionTable where
@@ -11,7 +12,7 @@ instance HSTable DistributionTable where
 	lookup _ _ _ = []
 
 toHSRow :: Integer -> Double -> HSRow
-toHSRow n p = HSValueRow header [HSFieldHolder(HSInteger n), HSFiledHolder(HSDouble p)]
+toHSRow n p = HSValueRow header [pack(HSStaticField(HSInteger n)), pack(HSStaticField(HSDouble p))]
 
 
 factorial :: Integer-> Double
