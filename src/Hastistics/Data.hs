@@ -1,9 +1,9 @@
 {-# LANGUAGE ExistentialQuantification #-}
 
 module Hastistics.Data
-       (HSValue(HSString, HSInt, HSDouble, None),
+       (HSValue(HSString, HSInt, HSDouble, HSInteger, None),
         HSTable, ListTable(ListTable), HSReport,
-        HSRow, 
+        HSRow(HSValueRow), HSFieldHolder,
         from, groupBy, when, avgOf, valueOf, sumOf,
         dataOf, valuesOf, fieldValueOf,
         headersOf, Hastistics.Data.lookup,
