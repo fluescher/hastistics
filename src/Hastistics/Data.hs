@@ -5,6 +5,7 @@ module Hastistics.Data
         HSTable, ListTable(ListTable), HSReport,
         from, groupBy, when, avgOf, valueOf, sumOf,
         dataOf, valuesOf, fieldValueOf,
+        headersOf, Hastistics.Data.lookup,
         eval) where
 
 import qualified Data.Map as Map
