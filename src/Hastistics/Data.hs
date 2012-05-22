@@ -12,6 +12,7 @@ import qualified Data.Map as Map
 data HSValue
    = HSString String
    | HSInt Int
+   | HSInteger Integer
    | HSDouble Double
    | None
    deriving(Eq, Ord, Show)
