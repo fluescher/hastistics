@@ -11,7 +11,7 @@ import Hastistics.Distributions
 testListTableData   = ListTable ["One", "Other"] [[2,1], [1,2], [2,6]]
 testList            = testListTableData
 
-testDistributionTable = DistributionTable 4 0.2
+testBinominalTable 	= BinominalTable 4 0.2
 
 simplestReport      = valueOf "One" $ sumOf "One" $ avgOf "Other" $
                       from testList
@@ -32,7 +32,7 @@ groupedReport       = valueOf "One" $ sumOf "Other" $
                       from testList
 
 probabilityReport	= sumOf "p" $
-					  from testDistributionTable
+					  from testBinominalTable
 
 listValueOf rep = [valuesOf r | r <- dataOf (eval rep)]
 
