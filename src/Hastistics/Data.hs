@@ -99,6 +99,9 @@ pack    = HSFieldHolder
 data HSRow      
    = HSValueRow  [Key] [HSFieldHolder] 
 
+instance Show HSRow where
+    show = showRow . valuesOf 
+
 {- |Get the values out of a HSRow. -}
 valuesOf :: HSRow -> [HSValue]
 valuesOf (HSValueRow _ vs)    = [val v | (HSFieldHolder v) <- vs]
@@ -116,7 +119,8 @@ define your own data sources for the Hastistics framework. -}
 class (Show t) => HSTable t where
     headersOf   :: t -> [Key]
     dataOf      :: t -> [HSRow]
-    lookup	    :: String -> Key -> t -> [HSRow]
+    lookup	    :: Key -> HSValue -> t -> [HSRow]
+    lookup k v t = [r | r <- (dataOf t), (fieldValueOf k r) == v]
 
 colWidth ::  Int
 colWidth = 20
@@ -147,10 +151,11 @@ showTable t     | length (headersOf t) == 0 = ""
                                               showBorder (headersOf t)
 
 data ListTable   = ListTable [Key] [[Int]]
+
 instance HSTable ListTable where
     headersOf (ListTable hs _) = hs 
     dataOf (ListTable hs vals)  = [HSValueRow hs [pack (HSStaticField (HSInt f)) | f <- r ] | r <- vals]
-    lookup _ _ _	       = []
+
 instance Show ListTable where
     show = showTable
 
