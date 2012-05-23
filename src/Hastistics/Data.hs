@@ -3,7 +3,7 @@
 module Hastistics.Data where
 
 import qualified Data.Map as Map
-import Text.Printf
+import Text.Printf (printf)
 
 data HSValue
    = HSString String
@@ -42,6 +42,8 @@ type Key = String
 
 class (Show f) => HSField f where
     val         :: f -> HSValue
+    meta        :: f -> String
+    meta   _    =  ""
     update      :: f -> HSRow -> f
     update fi _ =  fi
 
@@ -55,16 +57,18 @@ instance HSField HSStaticField where
 instance Show HSStaticField where
     show = showField
 
-data HSValueOfField = HSValueOfField String HSValue
+data HSValueOfField = HSValueOfField Key HSValue
 instance HSField HSValueOfField where
+    meta    (HSValueOfField k _)       = "Value of " ++ k
     val     (HSValueOfField _ v)       = v 
     update  (HSValueOfField h None) r  = HSValueOfField h (fieldValueOf h r)
     update  f _                        = f
 instance Show HSValueOfField where
     show = showField
 
-data HSAvgField = HSAvgField String HSValue Int
+data HSAvgField = HSAvgField Key HSValue Int
 instance HSField HSAvgField where
+    meta    (HSAvgField k _  _  )   = "Average of " ++ k
     val     (HSAvgField _ su cnt)   = su Hastistics.Data./ HSDouble (fromIntegral cnt)
     update  (HSAvgField h su cnt) r = HSAvgField h sm newCnt
                                     where sm     = (Hastistics.Data.+) su (fieldValueOf h r)
@@ -73,10 +77,12 @@ instance Show HSAvgField where
     show = showField
 
 
-data HSSumField = HSSumField String HSValue
+data HSSumField = HSSumField Key HSValue
 instance HSField HSSumField where
+    meta    (HSSumField k _)   = "Sum of " ++ k
     val     (HSSumField _ v)   = v
     update  (HSSumField h v) r = HSSumField h ((Hastistics.Data.+) v (fieldValueOf h r))
+
 instance Show HSSumField where
     show = showField
 
@@ -112,9 +118,12 @@ class (Show t) => HSTable t where
     dataOf      :: t -> [HSRow]
     lookup	    :: String -> Key -> t -> [HSRow]
 
+colWidth ::  Int
+colWidth = 20
+
 showBorder      :: (Show a) => [a] -> String 
 showBorder []     = "+"
-showBorder (_:ks) = "+------------" ++ showBorder ks
+showBorder (_:ks) = "+" ++ take (colWidth Prelude.+ 2) (repeat '-')  ++ showBorder ks
 
 showHeader      :: (Show a) => [a] -> String
 showHeader ks   = (showBorder ks) ++ "\n" ++ 
@@ -124,17 +133,18 @@ showHeader ks   = (showBorder ks) ++ "\n" ++
 showRow         :: (Show a) => [a] -> String
 showRow []      = "|"
 showRow (k:ks)  = "| " ++ v ++ space ++ " " ++ showRow ks
-                where   v       = take 10 (show k)
-                        space   = take (10-(length v)) (repeat ' ')
+                where   v       = take colWidth (show k)
+                        space   = take (colWidth-(length v)) (repeat ' ')
 
 showRows        :: [HSRow] -> String
 showRows []     = ""
 showRows (r:rs) = showRow (valuesOf r) ++ "\n" ++ showRows rs
 
 showTable       :: HSTable t => t -> String
-showTable t     = showHeader (headersOf t) ++ "\n" ++
-                  showRows (dataOf t) ++ 
-                  showBorder (headersOf t)
+showTable t     | length (headersOf t) == 0 = ""
+                | otherwise                 = showHeader (headersOf t) ++ "\n" ++
+                                              showRows (dataOf t) ++ 
+                                              showBorder (headersOf t)
 
 data ListTable   = ListTable [Key] [[Int]]
 instance HSTable ListTable where
@@ -171,7 +181,7 @@ data HSReport
               }
 
 addCalcCol      :: HSField f => HSReport -> f -> HSReport
-addCalcCol r f  = r{cols = (pack f):(cols r)} 
+addCalcCol r f  = r{cols = (pack f):(cols r), headers = (meta f) : (headers r)} 
 
 addConstraint   :: HSReport -> (HSRow -> Bool) -> HSReport
 addConstraint r f = r{constraints=f:(constraints r)}
@@ -185,6 +195,7 @@ instance HSTable HSReport where
     headersOf = headers
     dataOf    = reportResult
     lookup _ _ _    = []
+
 instance Show HSReport where
     show = showTable
 
@@ -223,14 +234,12 @@ eval        :: HSReport -> HSReport
 eval report | isGrouped report  = evalReport (report{rows= HSGroupedResult (groupKeyFor (groupKey report)) (HSValueRow (headers report)(cols report)) Map.empty})
             | otherwise         = evalReport (report{rows= HSSingleResult (HSValueRow (headers report) (cols report))})
 
-
 groupKeyFor :: (Maybe Key) -> Key
 groupKeyFor (Just k) = k
 groupKeyFor _ = error "No group by key defined"
 
 isGrouped  :: HSReport -> Bool
 isGrouped  report = not ((groupKey report) == Nothing)
-
 
 updateRow :: HSRow -> HSRow -> HSRow
 updateRow (HSValueRow hs fs) row = HSValueRow hs [pack (update c row) | (HSFieldHolder c) <- fs]
@@ -249,12 +258,9 @@ updateOrCreate :: HSRow -> HSRow -> (Maybe HSRow) -> (Maybe HSRow)
 updateOrCreate _   dat (Just row) = Just (updateRow row dat)
 updateOrCreate row dat Nothing    = Just (updateRow row dat)
 
-
 evalReport :: HSReport -> HSReport
 evalReport report = report {rows= updateResults (rows report) dat}
                   where dat                       = filter predicate (toDat (source report))
                         toDat (HSTableHolder tab) = dataOf tab
                         predicate                 = shouldInclude report
-
-
 
