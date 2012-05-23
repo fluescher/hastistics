@@ -185,7 +185,7 @@ data HSReport
                     rows        :: HSResult,
                     constraints :: [(HSRow -> Bool)],
                     groupKey    :: Maybe Key,
-                    joinKey     :: Maybe JoinInfo
+                    joinKeys    :: [JoinInfo]
               }
 
 addCalcCol      :: HSField f => HSReport -> f -> HSReport
@@ -229,7 +229,7 @@ avgOf   h r = addCalcCol r field
 data JoinInfo = JoinInfo Key Key HSTableHolder
 
 join        :: HSTable t => t -> Key -> Key -> HSReport -> HSReport
-join t a b r = r {joinKey=Just (JoinInfo a b (HSTableHolder t))}
+join t a b r = r {joinKeys=(JoinInfo a b (HSTableHolder t)):joinKeys r}
 
 groupBy     :: Key -> HSReport -> HSReport
 groupBy k r = r {groupKey=Just k}
@@ -237,7 +237,7 @@ groupBy k r = r {groupKey=Just k}
 {- |Starting Point for every report run. Creates a new HSReport from 
 a HSTable. -}
 from        :: HSTable t => t -> HSReport
-from table  =  HSReport {source=HSTableHolder table, cols=[], constraints=[], rows=HSEmptyResult, headers=[], groupKey=Nothing, joinKey=Nothing}
+from table  =  HSReport {source=HSTableHolder table, cols=[], constraints=[], rows=HSEmptyResult, headers=[], groupKey=Nothing, joinKeys=[]}
 
 {- |Used to filter input data of a HSReport. -}
 when        :: (HSRow -> Bool) -> HSReport -> HSReport
@@ -281,9 +281,10 @@ joinedData (JoinInfo leftKey rightKey (HSTableHolder tab)) row    = datOrPlaceHo
                                                                         joinVal             = fieldValueOf leftKey row
 
 sourceData      :: HSReport -> [HSRow]
-sourceData r    = toDat (joinKey r) (source r)
-                where toDat Nothing       (HSTableHolder tab) = dataOf tab
-                      toDat (Just jinfo)  (HSTableHolder tab) = [combine left (head (joinedData jinfo left)) | left <- dataOf tab]
+sourceData r    = toDat (joinKeys r) (source r)
+                where toDat []       (HSTableHolder tab) = dataOf tab
+                      toDat js (HSTableHolder tab)       = [compose left js | left <- dataOf tab]
+                      compose left js                    = foldl (combine) left [(head (joinedData jin left)) | jin <- js]
 
 
 evalReport :: HSReport -> HSReport
