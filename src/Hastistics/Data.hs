@@ -182,7 +182,8 @@ data HSReport
                     cols        :: [HSFieldHolder],
                     rows        :: HSResult,
                     constraints :: [(HSRow -> Bool)],
-                    groupKey    :: Maybe Key
+                    groupKey    :: Maybe Key,
+                    joinKey     :: Maybe JoinInfo
               }
 
 addCalcCol      :: HSField f => HSReport -> f -> HSReport
@@ -223,13 +224,18 @@ avgOf       :: String -> HSReport -> HSReport
 avgOf   h r = addCalcCol r field
               where field = HSAvgField h (HSDouble 0) 0
 
+data JoinInfo = JoinInfo Key Key HSTableHolder
+
+join        :: HSTable t => t -> Key -> Key -> HSReport -> HSReport
+join t a b r = r {joinKey=Just (JoinInfo a b (HSTableHolder t))}
+
 groupBy     :: Key -> HSReport -> HSReport
 groupBy k r = r {groupKey=Just k}
 
 {- |Starting Point for every report run. Creates a new HSReport from 
 a HSTable. -}
 from        :: HSTable t => t -> HSReport
-from table  =  HSReport {source=HSTableHolder table, cols=[], constraints=[], rows=HSEmptyResult, headers=[], groupKey=Nothing}
+from table  =  HSReport {source=HSTableHolder table, cols=[], constraints=[], rows=HSEmptyResult, headers=[], groupKey=Nothing, joinKey=Nothing}
 
 {- |Used to filter input data of a HSReport. -}
 when        :: (HSRow -> Bool) -> HSReport -> HSReport
@@ -263,9 +269,20 @@ updateOrCreate :: HSRow -> HSRow -> (Maybe HSRow) -> (Maybe HSRow)
 updateOrCreate _   dat (Just row) = Just (updateRow row dat)
 updateOrCreate row dat Nothing    = Just (updateRow row dat)
 
+combine             :: HSRow -> HSRow -> HSRow
+combine (HSValueRow onehs onefs) (HSValueRow otherhs otherfs)   = HSValueRow (onehs ++ otherhs) (onefs ++ otherfs)
+
+joinedData              :: JoinInfo -> HSRow -> [HSRow]
+joinedData (JoinInfo leftKey rightKey (HSTableHolder tab)) row    = Hastistics.Data.lookup rightKey joinVal tab
+                                                                  where joinVal = fieldValueOf leftKey row
+
 evalReport :: HSReport -> HSReport
 evalReport report = report {rows= updateResults (rows report) dat}
-                  where dat                       = filter predicate (toDat (source report))
-                        toDat (HSTableHolder tab) = dataOf tab
+                  where dat                       = filter predicate (sourceData report)
                         predicate                 = shouldInclude report
+
+sourceData      :: HSReport -> [HSRow]
+sourceData r    = toDat (joinKey r) (source r)
+                where toDat Nothing       (HSTableHolder tab) = dataOf tab
+                      toDat (Just jinfo)  (HSTableHolder tab) = [combine left (head (joinedData jinfo left)) | left <- dataOf tab]
 
