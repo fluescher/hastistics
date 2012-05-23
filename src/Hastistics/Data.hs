@@ -3,6 +3,7 @@
 module Hastistics.Data where
 
 import qualified Data.Map as Map
+import Text.Printf
 
 data HSValue
    = HSString String
@@ -16,7 +17,7 @@ instance Show HSValue where
     show (HSString s)  = s
     show (HSInt i)     = show i
     show (HSInteger i) = show i
-    show (HSDouble  d) = show d
+    show (HSDouble  d) = printf "%f" d
     show None          = "None"
 
 type Key = String
