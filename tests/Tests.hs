@@ -31,6 +31,10 @@ joinReport          = valueOf "b" $ valueOf "d" $
                       groupBy "a" $
                       from (ListTable ["a", "b"] [[1,2],[2,4]])
 
+joinToEmptyReport   = valueOf "b" $ valueOf "d" $
+                      join (ListTable ["c", "d"] [[1,4],[2,8]]) "a" "c" $
+                      groupBy "a" $
+                      from (ListTable ["a", "b"] [[3,2],[4,4]])
 
 groupedReport       = valueOf "One" $ sumOf "Other" $
                       groupBy "One" $
@@ -64,9 +68,10 @@ testProbability		= TestCase $ assertEqual "Should be equal to one" (HSInt 1) (to
 
 testJoin            = TestCase $ assertEqual "Should be joined with other table" [[HSInt 2, HSInt 4],[HSInt 4, HSInt 8]] (listValueOf joinReport)
 
+testJoinToEmpty     = TestCase $ assertEqual "should contain None values for each row" [[HSInt 2,None],[HSInt 4,None]] (listValueOf joinToEmptyReport)
 
 -- Register test functions here
-listOfTests = [testListTable, testValueOfColumn, testConstraint, testToStrict, testGroupBy, testProbability, testJoin]
+listOfTests = [testListTable, testValueOfColumn, testConstraint, testToStrict, testGroupBy, testProbability, testJoin, testJoinToEmpty]
 
 main = do 
           (Counts cases tries errors failures) <- runTestTT $ TestList listOfTests

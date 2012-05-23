@@ -106,6 +106,8 @@ instance Show HSRow where
 valuesOf :: HSRow -> [HSValue]
 valuesOf (HSValueRow _ vs)    = [val v | (HSFieldHolder v) <- vs]
 
+toRow        :: [Key] -> [HSValue] -> HSRow
+toRow ks vs  = HSValueRow ks [pack (HSStaticField v) | v <- vs]
 
 fieldValueOf :: String -> HSRow -> HSValue
 fieldValueOf _ (HSValueRow _ [])                            = None
@@ -273,16 +275,19 @@ combine             :: HSRow -> HSRow -> HSRow
 combine (HSValueRow onehs onefs) (HSValueRow otherhs otherfs)   = HSValueRow (onehs ++ otherhs) (onefs ++ otherfs)
 
 joinedData              :: JoinInfo -> HSRow -> [HSRow]
-joinedData (JoinInfo leftKey rightKey (HSTableHolder tab)) row    = Hastistics.Data.lookup rightKey joinVal tab
-                                                                  where joinVal = fieldValueOf leftKey row
-
-evalReport :: HSReport -> HSReport
-evalReport report = report {rows= updateResults (rows report) dat}
-                  where dat                       = filter predicate (sourceData report)
-                        predicate                 = shouldInclude report
+joinedData (JoinInfo leftKey rightKey (HSTableHolder tab)) row    = datOrPlaceHolder (Hastistics.Data.lookup rightKey joinVal tab)
+                                                                  where datOrPlaceHolder [] = [toRow (headersOf tab) (take (length (headersOf tab)) (repeat None))]
+                                                                        datOrPlaceHolder xs = xs
+                                                                        joinVal             = fieldValueOf leftKey row
 
 sourceData      :: HSReport -> [HSRow]
 sourceData r    = toDat (joinKey r) (source r)
                 where toDat Nothing       (HSTableHolder tab) = dataOf tab
                       toDat (Just jinfo)  (HSTableHolder tab) = [combine left (head (joinedData jinfo left)) | left <- dataOf tab]
+
+
+evalReport :: HSReport -> HSReport
+evalReport report = report {rows= updateResults (rows report) dat}
+                  where dat                       = filter predicate (sourceData report)
+                        predicate                 = shouldInclude report
 
