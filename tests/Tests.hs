@@ -26,6 +26,11 @@ emptyReport         = valueOf "One" $ sumOf "One" $ avgOf "One" $
                       when (\r -> (fieldValueOf "Other" r)  == HSInt 1) $
                       from testList
 
+joinReport          = valueOf "b" $ valueOf "d" $
+                      join (ListTable ["c", "d"] [[1,4],[2,8]]) "a" "c" $
+                      groupBy "a" $
+                      from (ListTable ["a", "b"] [[1,2],[2,4]])
+
 
 groupedReport       = valueOf "One" $ sumOf "Other" $
                       groupBy "One" $
@@ -57,8 +62,11 @@ testGroupBy         = TestCase $ assertEqual "Should be grouped" [[HSInt 1, HSIn
 
 testProbability		= TestCase $ assertEqual "Should be equal to one" (HSInt 1) (toHSInt $ head $ head (listValueOf probabilityReport))
 
+testJoin            = TestCase $ assertEqual "Should be joined with other table" [[HSInt 2, HSInt 4],[HSInt 4, HSInt 8]] (listValueOf joinReport)
+
+
 -- Register test functions here
-listOfTests = [testListTable, testValueOfColumn, testConstraint, testToStrict, testGroupBy, testProbability]
+listOfTests = [testListTable, testValueOfColumn, testConstraint, testToStrict, testGroupBy, testProbability, testJoin]
 
 main = do 
           (Counts cases tries errors failures) <- runTestTT $ TestList listOfTests
