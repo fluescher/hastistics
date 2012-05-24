@@ -28,7 +28,6 @@ instance HSField HSAvgField where
 instance Show HSAvgField where
     show = showField
 
-
 data HSCountField = HSCountField HSValue
 instance HSField HSCountField where
     meta    _                  = "Count"
@@ -45,4 +44,13 @@ instance HSField HSSumField where
     update  (HSSumField h v) r = HSSumField h ((Hastistics.Types.+) v (fieldValueOf h r))
 
 instance Show HSSumField where
+    show = showField
+
+data HSMinField = HSMinField Key HSValue
+instance HSField HSMinField where
+    meta    (HSMinField k _)   = "Min of " ++ k
+    val     (HSMinField _ v)   = v
+    update  (HSMinField h v) r  = HSMinField h (min v (fieldValueOf h r))
+
+instance Show HSMinField where
     show = showField

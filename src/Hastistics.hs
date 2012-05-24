@@ -88,6 +88,12 @@ avgOf       :: String -> HSReport -> HSReport
 avgOf   h r = addCalcCol r field
               where field = HSAvgField h (HSDouble 0) 0
 
+minOf       :: String -> HSReport -> HSReport
+minOf   h r = addCalcCol r field
+              where field = HSMinField h (HSDouble infinity)
+
+infinity = 1 Prelude./ 0
+			
 data JoinInfo = JoinInfo Key Key HSTableHolder
 
 join        :: HSTable t => t -> Key -> Key -> HSReport -> HSReport
