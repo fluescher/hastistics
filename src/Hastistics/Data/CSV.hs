@@ -1,25 +1,30 @@
 module Hastistics.Data.CSV where
 
---import Hastistics.Data
+import Hastistics
+import Hastistics.Types
 import Text.ParserCombinators.Parsec
 
-csvFile :: GenParser Char st [[String]]
-csvFile = endBy line eol
+type CSV = [Record]
+type Record = [Field]
+type Field = String
 
-line :: GenParser Char st [String]
-line = sepBy cell (char ',')
+csv :: Parser CSV
+csv = endBy record eol
 
-cell :: GenParser Char st String
-cell = quotedCell <|> many (noneOf ",\n\r")
+record :: Parser Record
+record = sepBy field (char ',')
 
-quotedCell :: GenParser Char st String
-quotedCell = 
+field :: Parser Field
+field = quotedField <|> many (noneOf ",\n\r")
+
+quotedField :: Parser Field
+quotedField = 
     do _ <- char '"'
        content <- many quotedChar
        _ <- char '"' <?> "quote at end of cell"
        return content
 
-quotedChar :: GenParser Char st Char
+quotedChar :: Parser Char
 quotedChar =
         noneOf "\""
     <|> try (string "\"\"" >> return '"')
@@ -31,22 +36,24 @@ eol =   try (string "\n\r")
     <|> string "\r"
     <?> "end of line"
 
-parseCSV :: String -> Either ParseError [[String]]
-parseCSV input = parse csvFile "(unknown)" input
+parseCSV :: String -> Either ParseError CSV
+parseCSV input = parse csv "(unknown)" input
 
-main :: IO()
-main =
-    do c <- getContents
-       case parse csvFile "(stdin)" c of
-            Left e -> do putStrLn "Error parsing input:"
-                         print e
-            Right r -> mapM_ print r
-			
-{-
-data CSVTable = CSVFile [String] [HSCol] [HSRow]
+extract :: (Either ParseError CSV) -> CSV
+extract (Left _) = error "Error on parsing"
+extract (Right r) = r
+
+csvTable :: String -> CSVTable
+csvTable input = CSVTable hs rs
+                     where hs = head parsed
+		           rs = [toRow hs (map (HSString) row) | row <- tail parsed]
+			   parsed = extract (parseCSV input)
+
+data CSVTable = CSVTable [Key] [HSRow]
 
 instance HSTable CSVTable where
-        colsOf (CSVFile _ columns _)= columns
-        headersOf (CSVFile h _ _)   = [HSColHeader s | s <-h] 
-        dataOf (CSVFile _ _ values) = values
--}
+    headersOf (CSVTable hs _) = hs
+    dataOf (CSVTable _ rs) = rs
+
+instance Show CSVTable where
+    show = showTable
