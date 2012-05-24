@@ -1,6 +1,7 @@
 module Hastistics.Distributions where 
 
-import Hastistics.Data hiding ((/), (+))
+import Hastistics.Types hiding ((/), (+))
+import Hastistics.Fields
 
 data BinominalTable = BinominalTable Integer Double
 header :: [String]

@@ -4,6 +4,7 @@ import System.Exit (exitSuccess, exitFailure)
 import System.IO (stdout)
 import Test.HUnit
 
+import Hastistics.Types
 import Hastistics.Data
 import Hastistics.Distributions
 
