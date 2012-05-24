@@ -10,7 +10,7 @@ Build-type:     Simple
 Library
     Build-Depends:      base, containers, parsec
     HS-Source-Dirs:     src
-    Exposed-Modules:    Hastistics, Hastistics.Distributions, Hastistics.Data, Hastistics.Types,
+    Exposed-Modules:    Hastistics, Hastistics.Distributions, Hastistics.Types,
                         Hastistics.Data.CSV, Hastistics.Fields
     Ghc-Options:        -Wall
 

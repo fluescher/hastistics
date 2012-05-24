@@ -5,9 +5,8 @@ import System.IO (stdout)
 import Test.HUnit
 
 import Hastistics.Types
-import Hastistics.Data
 import Hastistics.Distributions
-
+import Hastistics
 
 testListTableData   = ListTable ["One", "Other"] [[2,1], [1,2], [2,6]]
 testList            = testListTableData
