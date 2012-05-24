@@ -25,6 +25,15 @@ instance HSTable HypergeometricTable where
 instance Show HypergeometricTable where
 	show = showTable
 
+data PossionTable = PossionTable Integer Double
+	  
+instance HSTable PossionTable where
+	headersOf _ = header
+	dataOf (PossionTable k l) = [toHSRow x (poisspdf  x l) | x <- [0..k]]
+	lookup _ _ _ = []
+	 
+instance Show PossionTable where
+	show = showTable
 
 toHSRow :: Integer -> Double -> HSRow
 toHSRow n p = HSValueRow header [pack(HSStaticField(HSInteger n)), pack(HSStaticField(HSDouble p))]
@@ -58,3 +67,9 @@ hygecdf k m r n = sum [hygepdf x m r n | x <- [0..k]]
 
 normpdf :: Double -> Double -> Double -> Double
 normpdf x mu sigma = 1 / (sqrt(2 * pi) * sigma) * exp(1) ** ((-((x - mu) ** 2) / (2 * sigma ** 2)))
+
+poisspdf :: Integer -> Double -> Double
+poisspdf k l = (l ^ k) / (factorial k) * (exp(1) ** (-l))
+
+poisscdf :: Integer -> Double -> Double
+poisscdf k l = sum [poisspdf x l | x <- [0..k]]
