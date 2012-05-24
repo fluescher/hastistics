@@ -36,7 +36,24 @@ eol =   try (string "\n\r")
     <|> string "\r"
     <?> "end of line"
 
-parseCSV :: String -> Either ParseError [[String]]
-parseCSV input = parse csvFile "(unknown)" input
+parseCSV :: String -> Either ParseError CSV
+parseCSV input = parse csv "(unknown)" input
 
---data CSVTable = CSVTable String
+extract :: (Either ParseError CSV) -> CSV
+extract (Left _) = error "Error on parsing"
+extract (Right r) = r
+
+csvTable :: String -> CSVTable
+csvTable input = CSVTable hs rs
+                     where hs = head parsed
+		           rs = [toRow hs (map (HSString) row) | row <- tail parsed]
+			   parsed = extract (parseCSV input)
+
+data CSVTable = CSVTable [Key] [HSRow]
+
+instance HSTable CSVTable where
+    headersOf (CSVTable hs _) = hs
+    dataOf (CSVTable _ rs) = rs
+
+instance Show CSVTable where
+    show = showTable
