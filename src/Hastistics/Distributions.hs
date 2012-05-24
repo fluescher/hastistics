@@ -10,7 +10,6 @@ data BinominalTable = BinominalTable Integer Double
 instance HSTable BinominalTable where
 	headersOf _ = header 
 	dataOf (BinominalTable n p) = [toHSRow k (binopdf k n p) | k <- [0..n]]  
-	lookup _ _ _ = []
 
 instance Show BinominalTable where
     show = showTable
