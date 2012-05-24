@@ -16,6 +16,8 @@ testBinominalTable 	= BinominalTable 4 0.2
 simplestReport      = valueOf "One" $ sumOf "One" $ avgOf "Other" $
                       from testList
 
+countReport         = count $ from testList
+
 constraintReport    = valueOf "One" $ valueOf "Other" $
                       when (\r -> (fieldValueOf "One" r) == HSInt 1) $
                       from testList
@@ -61,6 +63,7 @@ testListTable       = TestCase $ assertEqual "Test list conversion"
 
 testValueOfColumn   = TestCase $ assertEqual "Should get the raw value." [[HSInt 2, HSInt 5, HSDouble 3]] (listValueOf simplestReport)
 
+testCountField      = TestCase $ assertEqual "Should count the number of rows" [[HSInteger 3]] (listValueOf countReport)
 
 testConstraint      = TestCase $ assertEqual "Should have filtered out values" [[HSInt 1, HSInt 2]] (listValueOf constraintReport)
 
@@ -78,7 +81,8 @@ testJoinToEmpty     = TestCase $ assertEqual "Should contain None values for eac
 testMultiJoin       = TestCase $ assertEqual "Should join multiple tables" [[HSInt 1, HSInt 1, HSInt 56, HSInt 1]] (listValueOf multiJoinReport)
 
 -- Register test functions here
-listOfTests = [testListTable, testValueOfColumn, testConstraint, testToStrict, testGroupBy, testProbability, testJoin, testJoinToEmpty, testMultiJoin]
+listOfTests = [testListTable, testValueOfColumn, testConstraint, testToStrict, testGroupBy, testProbability, testJoin, testJoinToEmpty, testMultiJoin,
+               testCountField]
 
 main = do 
           (Counts cases tries errors failures) <- runTestTT $ TestList listOfTests

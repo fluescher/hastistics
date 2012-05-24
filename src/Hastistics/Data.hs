@@ -28,6 +28,7 @@ type Key = String
 (+) (HSDouble da)    (HSDouble db) = HSDouble (da Prelude.+ db)
 (+) (HSDouble da)    (HSInt ib)    = HSDouble (da Prelude.+ (fromIntegral ib))
 (+) (HSInt ia)       (HSDouble db) = HSDouble ((fromIntegral ia) Prelude.+ db)
+(+) (HSInteger ia)   (HSInteger ib)= HSInteger (ia Prelude.+ ib)
 (+) _               _              = None
 
 (/)     :: HSValue -> HSValue -> HSValue
@@ -76,6 +77,15 @@ instance HSField HSAvgField where
 instance Show HSAvgField where
     show = showField
 
+
+data HSCountField = HSCountField HSValue
+instance HSField HSCountField where
+    meta    _                  = "Count"
+    val     (HSCountField v)   = v
+    update  (HSCountField v) _ = HSCountField (v Hastistics.Data.+ HSInteger 1)
+
+instance Show HSCountField where
+    show = showField
 
 data HSSumField = HSSumField Key HSValue
 instance HSField HSSumField where
@@ -220,6 +230,12 @@ sumOf       :: String -> HSReport -> HSReport
 sumOf   h r = addCalcCol r field
               where field = HSSumField h (HSInt 0)
 
+{- |Counts the number of input rows. -}
+count       :: HSReport -> HSReport
+count   r   = addCalcCol r field
+              where field = HSCountField (HSInteger 0)
+
+
 {- |Adds a result column to the report. This column calculates the average
 value of the value. -}
 avgOf       :: String -> HSReport -> HSReport
@@ -242,6 +258,8 @@ from table  =  HSReport {source=HSTableHolder table, cols=[], constraints=[], ro
 {- |Used to filter input data of a HSReport. -}
 when        :: (HSRow -> Bool) -> HSReport -> HSReport
 when f report = addConstraint report f
+
+
 
 eval        :: HSReport -> HSReport
 eval report | isGrouped report  = evalReport (report{rows= HSGroupedResult (groupKeyFor (groupKey report)) (HSValueRow (headers report)(cols report)) Map.empty})
