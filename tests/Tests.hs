@@ -4,9 +4,12 @@ import System.Exit (exitSuccess, exitFailure)
 import System.IO (stdout)
 import Test.HUnit
 
+import Hastistics.Data.CSV
 import Hastistics.Types
 import Hastistics.Distributions
 import Hastistics
+
+testCsv             = "a,b,c,d,e\n1,this,is,a,test\n2,and,a,second,test\n3,asd,d,her,stuff\n"
 
 testListTableData   = ListTable ["One", "Other"] [[2,1], [1,2], [2,6]]
 testList            = testListTableData
@@ -22,6 +25,8 @@ constraintReport    = valueOf "One" $ valueOf "Other" $
                       when (\r -> (fieldValueOf "One" r) == HSInt 1) $
                       from testList
 
+csvReport           = valueOf "a" $ count $
+                      from (csvTable [toInt, toString, toString, toString, toString] testCsv)
 
 emptyReport         = valueOf "One" $ sumOf "One" $ avgOf "One" $
                       when (\r -> (fieldValueOf "One" r)    == HSInt 1) $
@@ -80,9 +85,11 @@ testJoinToEmpty     = TestCase $ assertEqual "Should contain None values for eac
 
 testMultiJoin       = TestCase $ assertEqual "Should join multiple tables" [[HSInt 1, HSInt 1, HSInt 56, HSInt 1]] (listValueOf multiJoinReport)
 
+testCSV             = TestCase $ assertEqual "Should parse CSV" [[HSInt 1, HSInteger 3]] (listValueOf csvReport)
+
 -- Register test functions here
 listOfTests = [testListTable, testValueOfColumn, testConstraint, testToStrict, testGroupBy, testProbability, testJoin, testJoinToEmpty, testMultiJoin,
-               testCountField]
+               testCountField, testCSV]
 
 main = do 
           (Counts cases tries errors failures) <- runTestTT $ TestList listOfTests

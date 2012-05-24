@@ -21,6 +21,21 @@ instance Show HSValue where
 
 type Key = String
 
+type ValueParser = (String -> HSValue)
+
+toString :: ValueParser
+toString = HSString
+
+toInt    :: ValueParser
+toInt    = HSInt . read
+
+toInteger :: ValueParser 
+toInteger = HSInteger . read
+
+toDouble :: ValueParser
+toDouble = HSDouble . read
+
+
 (+)     :: HSValue -> HSValue -> HSValue
 (+) (HSString sa)    (HSString sb) = HSString (sa Prelude.++ sb)
 (+) (HSInt ia)       (HSInt ib)    = HSInt (ia Prelude.+ ib)

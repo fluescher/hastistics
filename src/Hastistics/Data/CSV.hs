@@ -1,6 +1,7 @@
 module Hastistics.Data.CSV where
 
 import Hastistics
+import Hastistics.Fields()
 import Hastistics.Types
 import Text.ParserCombinators.Parsec
 
@@ -43,11 +44,16 @@ extract :: (Either ParseError CSV) -> CSV
 extract (Left _) = error "Error on parsing"
 extract (Right r) = r
 
-csvTable :: String -> CSVTable
-csvTable input = CSVTable hs rs
-                     where hs = head parsed
-		           rs = [toRow hs (map (HSString) row) | row <- tail parsed]
-			   parsed = extract (parseCSV input)
+csvTable :: [ValueParser] -> String -> CSVTable
+csvTable ps input = CSVTable hs rs
+                    where hs = head parsed
+                          rs = [toRow hs (convertRow [] ps row) | row <- tail parsed ]
+                          parsed = extract (parseCSV input)
+
+convertRow :: [HSValue] -> [ValueParser] -> Record -> [HSValue]
+convertRow r []     _                   = r
+convertRow r _      []                  = r
+convertRow vs (t:ts) (f:fs)             = (t f):(convertRow vs ts fs)
 
 data CSVTable = CSVTable [Key] [HSRow]
 
