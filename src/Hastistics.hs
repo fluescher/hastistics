@@ -92,6 +92,7 @@ minOf       :: String -> HSReport -> HSReport
 minOf   h r = addCalcCol r field
               where field = HSMinField h (HSDouble infinity)
 
+infinity :: Double
 infinity = 1 Prelude./ 0
 			
 data JoinInfo = JoinInfo Key Key HSTableHolder
