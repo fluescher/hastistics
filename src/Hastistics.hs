@@ -29,7 +29,8 @@ resultRows (HSGroupedResult _ _ rs) = [row | (_, row) <- Map.toList rs]
 toRow        :: [Key] -> [HSValue] -> HSRow
 toRow ks vs  = HSValueRow ks [pack (HSStaticField v) | v <- vs]
 
-
+type HSJoiner      = (HSRow -> HSRow)
+type HSConstraint  = (HSRow -> Bool)
 data HSTableHolder = forall a. HSTable a => HSTableHolder a
 
 {- |Report structure storing all metainformation about a report. -}    
@@ -37,11 +38,12 @@ data HSReport
    = HSReport {
                     source      :: HSTableHolder,
                     headers     :: [Key],
+                    sheaders    :: [Key],
                     cols        :: [HSFieldHolder],
                     rows        :: HSResult,
                     constraints :: [(HSRow -> Bool)],
                     groupKey    :: Maybe Key,
-                    joinKeys    :: [JoinInfo]
+                    joiner      :: HSJoiner
               }
 
 addCalcCol      :: HSField f => HSReport -> f -> HSReport
@@ -94,11 +96,9 @@ minOf   h r = addCalcCol r field
 
 infinity :: Double
 infinity = 1 Prelude./ 0
-			
-data JoinInfo = JoinInfo Key Key HSTableHolder
 
 join        :: HSTable t => t -> Key -> Key -> HSReport -> HSReport
-join t a b r = r {joinKeys=(JoinInfo a b (HSTableHolder t)):joinKeys r}
+join t a b r = r {joiner=(joinRow t a b) . (joiner r), sheaders=(sheaders r) ++ (headersOf t)}
 
 groupBy     :: Key -> HSReport -> HSReport
 groupBy k r = r {groupKey=Just k}
@@ -106,13 +106,28 @@ groupBy k r = r {groupKey=Just k}
 {- |Starting Point for every report run. Creates a new HSReport from 
 a HSTable. -}
 from        :: HSTable t => t -> HSReport
-from table  =  HSReport {source=HSTableHolder table, cols=[], constraints=[], rows=HSEmptyResult, headers=[], groupKey=Nothing, joinKeys=[]}
+from table  =  HSReport {source=HSTableHolder table, cols=[], constraints=[], rows=HSEmptyResult, headers=[], sheaders=headersOf table, groupKey=Nothing, joiner=(\a -> a)}
 
 {- |Used to filter input data of a HSReport. -}
 when        :: (HSRow -> Bool) -> HSReport -> HSReport
 when f report = addConstraint report f
 
 
+joinData :: HSTable t => t -> String -> String -> HSRow -> [HSRow]
+joinData tab leftKey rightKey row =  datOrPlaceHolder (Hastistics.Types.lookup rightKey joinVal tab)
+                                     where datOrPlaceHolder [] = [toRow (headersOf tab) (take (length (headersOf tab)) (repeat None))]
+                                           datOrPlaceHolder xs = xs
+                                           joinVal             = fieldValueOf leftKey row
+
+combine             :: HSRow -> HSRow -> HSRow
+combine (HSValueRow onehs onefs) (HSValueRow otherhs otherfs)  = HSValueRow (onehs ++ otherhs) (onefs ++ otherfs)
+
+joinRow                     :: HSTable t => t -> String -> String -> HSRow -> HSRow
+joinRow tab left right  row =  combine row (head $ joinData tab left right row)
+
+
+select      :: HSReport -> HSReport
+select      = eval
 
 eval        :: HSReport -> HSReport
 eval report | isGrouped report  = evalReport (report{rows= HSGroupedResult (groupKeyFor (groupKey report)) (HSValueRow (headers report)(cols report)) Map.empty})
@@ -142,21 +157,11 @@ updateOrCreate :: HSRow -> HSRow -> (Maybe HSRow) -> (Maybe HSRow)
 updateOrCreate _   dat (Just row) = Just (updateRow row dat)
 updateOrCreate row dat Nothing    = Just (updateRow row dat)
 
-combine             :: HSRow -> HSRow -> HSRow
-combine (HSValueRow onehs onefs) (HSValueRow otherhs otherfs)   = HSValueRow (onehs ++ otherhs) (onefs ++ otherfs)
-
-joinedData              :: JoinInfo -> HSRow -> [HSRow]
-joinedData (JoinInfo leftKey rightKey (HSTableHolder tab)) row    = datOrPlaceHolder (Hastistics.Types.lookup rightKey joinVal tab)
-                                                                  where datOrPlaceHolder [] = [toRow (headersOf tab) (take (length (headersOf tab)) (repeat None))]
-                                                                        datOrPlaceHolder xs = xs
-                                                                        joinVal             = fieldValueOf leftKey row
-
 sourceData      :: HSReport -> [HSRow]
-sourceData r    = toDat (joinKeys r) (source r)
-                where toDat []       (HSTableHolder tab) = dataOf tab
-                      toDat js (HSTableHolder tab)       = [compose left js | left <- dataOf tab]
-                      compose left js                    = foldl (combine) left [(head (joinedData jin left)) | jin <- js]
-
+sourceData r    = [joinIt row | row <- sourceDat (source r)]
+                  where sourceDat (HSTableHolder t)     = dataOf t
+                        joinIt                          = setHeader (sheaders r) . joiner r
+                        setHeader hs (HSValueRow _ vs)  = HSValueRow hs vs
 
 evalReport :: HSReport -> HSReport
 evalReport report = report {rows= updateResults (rows report) dat}
