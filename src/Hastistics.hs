@@ -41,7 +41,7 @@ data HSReport
                     sheaders    :: [Key],
                     cols        :: [HSFieldHolder],
                     rows        :: HSResult,
-                    constraints :: [(HSRow -> Bool)],
+                    constraints :: HSConstraint,
                     groupKey    :: Maybe Key,
                     joiner      :: HSJoiner
               }
@@ -49,11 +49,9 @@ data HSReport
 addCalcCol      :: HSField f => HSReport -> f -> HSReport
 addCalcCol r f  = r{cols = (pack f):(cols r), headers = (meta f) : (headers r)} 
 
-addConstraint   :: HSReport -> (HSRow -> Bool) -> HSReport
-addConstraint r f = r{constraints=f:(constraints r)}
+addConstraint   :: HSReport -> HSConstraint -> HSReport
+addConstraint r f = r{constraints=(\row -> (f row) && (constraints r) row)}
 
-shouldInclude   :: HSReport -> HSRow -> Bool
-shouldInclude report row = and [cond row | cond <- constraints report]
 
 {- |Define the HSReport as a instance of a HSTable. This makes sure that results of a report can be 
 used as input data in other reports. -}
@@ -106,7 +104,7 @@ groupBy k r = r {groupKey=Just k}
 {- |Starting Point for every report run. Creates a new HSReport from 
 a HSTable. -}
 from        :: HSTable t => t -> HSReport
-from table  =  HSReport {source=HSTableHolder table, cols=[], constraints=[], rows=HSEmptyResult, headers=[], sheaders=headersOf table, groupKey=Nothing, joiner=(\a -> a)}
+from table  =  HSReport {source=HSTableHolder table, cols=[], constraints=(\_ -> True), rows=HSEmptyResult, headers=[], sheaders=headersOf table, groupKey=Nothing, joiner=(\a -> a)}
 
 {- |Used to filter input data of a HSReport. -}
 when        :: (HSRow -> Bool) -> HSReport -> HSReport
@@ -166,4 +164,4 @@ sourceData r    = [joinIt row | row <- sourceDat (source r)]
 evalReport :: HSReport -> HSReport
 evalReport report = report {rows= updateResults (rows report) dat}
                   where dat                       = filter predicate (sourceData report)
-                        predicate                 = shouldInclude report
+                        predicate                 = constraints report
