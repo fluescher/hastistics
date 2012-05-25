@@ -79,6 +79,12 @@ data HSRow
 instance Show HSRow where
     show = showRow . valuesOf 
 
+rowFields :: HSRow -> [HSFieldHolder]
+rowFields (HSValueRow _ f) = f
+
+rowHeaders :: HSRow -> [Key]
+rowHeaders (HSValueRow hs _ ) = hs
+
 {- |Get the values out of a HSRow. -}
 valuesOf :: HSRow -> [HSValue]
 valuesOf (HSValueRow _ vs)    = [val v | (HSFieldHolder v) <- vs]

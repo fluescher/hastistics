@@ -16,22 +16,32 @@ instance Show ListTable where
 
 data HSResult   = HSEmptyResult
                 | HSSingleResult HSRow
-                | HSGroupedResult Key HSRow (Map.Map HSValue HSRow)
+                | HSGroupedResult Key HSRow (Map.Map HSValue HSResult) HSResultUpdater
 
 reportResult   :: HSReport -> [HSRow]
-reportResult r = resultRows (rows r)
+reportResult r = resultRows (result r)
 
 resultRows     :: HSResult -> [HSRow]
-resultRows HSEmptyResult            = []
-resultRows (HSSingleResult r)       = [r]
-resultRows (HSGroupedResult _ _ rs) = [row | (_, row) <- Map.toList rs]
+resultRows HSEmptyResult              = []
+resultRows (HSSingleResult r)         = [r]
+resultRows (HSGroupedResult _ _ rs _) = fromMultiList $ groupedToList [res | (_, res) <- Map.toList rs]
+
+fromMultiList :: [[a]] -> [a]
+fromMultiList (x:xs)  = [v | v <- x] ++ fromMultiList xs
+fromMultiList []      = []
+
+groupedToList           :: [HSResult] -> [[HSRow]]
+groupedToList (r:rs)    = resultRows r : groupedToList rs
+groupedToList []        = []
 
 toRow        :: [Key] -> [HSValue] -> HSRow
 toRow ks vs  = HSValueRow ks [pack (HSStaticField v) | v <- vs]
 
-type HSJoiner      = (HSRow -> HSRow)
-type HSConstraint  = (HSRow -> Bool)
-data HSTableHolder = forall a. HSTable a => HSTableHolder a
+type HSJoiner           = HSRow -> HSRow
+type HSConstraint       = HSRow -> Bool
+type HSResultPrototype  = HSRow
+type HSResultUpdater    = HSResult -> HSRow -> HSResultPrototype-> HSResult
+data HSTableHolder      = forall a. HSTable a => HSTableHolder a
 
 {- |Report structure storing all metainformation about a report. -}    
 data HSReport
@@ -39,15 +49,15 @@ data HSReport
                     source      :: HSTableHolder,
                     headers     :: [Key],
                     sheaders    :: [Key],
-                    cols        :: [HSFieldHolder],
-                    rows        :: HSResult,
+                    proto       :: HSRow,
+                    result      :: HSResult,
                     constraints :: HSConstraint,
-                    groupKey    :: Maybe Key,
+                    updater     :: HSResultUpdater,
                     joiner      :: HSJoiner
               }
 
 addCalcCol      :: HSField f => HSReport -> f -> HSReport
-addCalcCol r f  = r{cols = (pack f):(cols r), headers = (meta f) : (headers r)} 
+addCalcCol r f  = r{proto=HSValueRow ((meta f):(rowHeaders (proto r))) ((pack f):(rowFields (proto r)))} 
 
 addConstraint   :: HSReport -> HSConstraint -> HSReport
 addConstraint r f = r{constraints=(\row -> (f row) && (constraints r) row)}
@@ -99,17 +109,42 @@ join        :: HSTable t => t -> Key -> Key -> HSReport -> HSReport
 join t a b r = r {joiner=(joinRow t a b) . (joiner r), sheaders=(sheaders r) ++ (headersOf t)}
 
 groupBy     :: Key -> HSReport -> HSReport
-groupBy k r = r {groupKey=Just k}
+groupBy k r = r {updater= groupUpdater k (updater r)}
 
 {- |Starting Point for every report run. Creates a new HSReport from 
 a HSTable. -}
 from        :: HSTable t => t -> HSReport
-from table  =  HSReport {source=HSTableHolder table, cols=[], constraints=(\_ -> True), rows=HSEmptyResult, headers=[], sheaders=headersOf table, groupKey=Nothing, joiner=(\a -> a)}
+from table  =  HSReport {
+                         source=HSTableHolder table, 
+                         proto=HSValueRow [] [], 
+                         constraints=(\_ -> True), 
+                         result=HSEmptyResult, 
+                         headers=[], 
+                         sheaders=headersOf table, 
+                         updater=singleUpdater, 
+                         joiner=(\a -> a)
+                         }
 
 {- |Used to filter input data of a HSReport. -}
 when        :: (HSRow -> Bool) -> HSReport -> HSReport
 when f report = addConstraint report f
 
+singleUpdater                            :: HSResultUpdater
+singleUpdater (HSSingleResult res) row _ = HSSingleResult (updateRow res row)
+singleUpdater r _ _                      = r
+
+groupUpdater                             :: Key -> HSResultUpdater -> HSResultUpdater
+groupUpdater k u (HSSingleResult _) row prot        = makeGroupedResult k u prot row Map.empty
+groupUpdater k u HSEmptyResult      row prot        = makeGroupedResult k u prot row Map.empty
+groupUpdater k u (HSGroupedResult _ _ m _) row prot = makeGroupedResult k u prot row m
+
+makeGroupedResult :: Key -> HSResultUpdater -> HSResultPrototype -> HSRow -> Map.Map HSValue HSResult -> HSResult
+makeGroupedResult k u prot row m = HSGroupedResult k prot (Map.alter f (fieldValueOf k row) m) u
+                                   where f = updateOrInsert u row prot
+
+updateOrInsert  :: HSResultUpdater -> HSRow -> HSResultPrototype -> Maybe HSResult -> Maybe HSResult
+updateOrInsert  u row prot (Just res)  = Just (u res row prot)
+updateOrInsert  u row prot Nothing     = Just (u HSEmptyResult row prot)
 
 joinData :: HSTable t => t -> String -> String -> HSRow -> [HSRow]
 joinData tab leftKey rightKey row =  datOrPlaceHolder (Hastistics.Types.lookup rightKey joinVal tab)
@@ -125,35 +160,17 @@ joinRow tab left right  row =  combine row (head $ joinData tab left right row)
 
 
 select      :: HSReport -> HSReport
-select      = eval
-
-eval        :: HSReport -> HSReport
-eval report | isGrouped report  = evalReport (report{rows= HSGroupedResult (groupKeyFor (groupKey report)) (HSValueRow (headers report)(cols report)) Map.empty})
-            | otherwise         = evalReport (report{rows= HSSingleResult (HSValueRow (headers report) (cols report))})
-
-groupKeyFor :: (Maybe Key) -> Key
-groupKeyFor (Just k) = k
-groupKeyFor _ = error "No group by key defined"
-
-isGrouped  :: HSReport -> Bool
-isGrouped  report = not ((groupKey report) == Nothing)
+select      = evalReport
 
 updateRow :: HSRow -> HSRow -> HSRow
 updateRow (HSValueRow hs fs) row = HSValueRow hs [pack (update c row) | (HSFieldHolder c) <- fs]
 
-updateResults :: HSResult -> [HSRow] -> HSResult
-updateResults res (r:rs)  = updateResults (updateResult res r) rs
-updateResults res []      = res
+updateResults :: HSResult -> [HSRow] -> HSResultPrototype -> HSResultUpdater -> HSResult
+updateResults res (r:rs)  p u   = updateResults (u res r p) rs p u
+updateResults res []      _ _  = res
 
-updateResult :: HSResult -> HSRow -> HSResult
-updateResult (HSSingleResult row) dat           = HSSingleResult (updateRow row dat)
-updateResult (HSGroupedResult k proto rs) dat   = HSGroupedResult k proto (Map.alter f (fieldValueOf k dat) rs)
-                                                  where f = updateOrCreate proto dat
-updateResult res _ = res
+--updateResult (HSGroupedResult k prot rs) dat    = HSGroupedResult k prot (Map.alter f (fieldValueOf k dat) rs)
 
-updateOrCreate :: HSRow -> HSRow -> (Maybe HSRow) -> (Maybe HSRow)
-updateOrCreate _   dat (Just row) = Just (updateRow row dat)
-updateOrCreate row dat Nothing    = Just (updateRow row dat)
 
 sourceData      :: HSReport -> [HSRow]
 sourceData r    = [joinIt row | row <- sourceDat (source r)]
@@ -162,6 +179,8 @@ sourceData r    = [joinIt row | row <- sourceDat (source r)]
                         setHeader hs (HSValueRow _ vs)  = HSValueRow hs vs
 
 evalReport :: HSReport -> HSReport
-evalReport report = report {rows= updateResults (rows report) dat}
-                  where dat                       = filter predicate (sourceData report)
-                        predicate                 = constraints report
+evalReport report = report {result= updateResults (HSSingleResult prot) dat prot updat}
+                  where updat       = updater report
+                        prot        = proto report
+                        dat         = filter predicate (sourceData report)
+                        predicate   = constraints report

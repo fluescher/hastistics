@@ -55,7 +55,7 @@ groupedReport       = valueOf "One" $ sumOf "Other" $
 probabilityReport	= sumOf "p" $
 					  from testBinominalTable
 
-listValueOf rep = [valuesOf r | r <- dataOf (eval rep)]
+listValueOf rep = [valuesOf r | r <- dataOf (select rep)]
 
 toHSInt :: HSValue -> HSValue
 toHSInt (HSDouble d) = HSInt(floor d)
