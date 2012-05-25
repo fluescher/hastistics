@@ -26,7 +26,7 @@ resultRows HSEmptyResult              = []
 resultRows (HSSingleResult r)         = [r]
 resultRows (HSGroupedResult _ _ rs _) = fromMultiList $ groupedToList [res | (_, res) <- Map.toList rs]
 
-fromMultiList :: [[a]] -> [a]
+fromMultiList         :: [[a]] -> [a]
 fromMultiList (x:xs)  = [v | v <- x] ++ fromMultiList xs
 fromMultiList []      = []
 
@@ -66,9 +66,8 @@ addConstraint r f = r{constraints=(\row -> (f row) && (constraints r) row)}
 {- |Define the HSReport as a instance of a HSTable. This makes sure that results of a report can be 
 used as input data in other reports. -}
 instance HSTable HSReport where
-    headersOf = headers
-    dataOf    = reportResult
-    lookup _ _ _    = []
+    headersOf       = headers
+    dataOf          = reportResult
 
 instance Show HSReport where
     show = showTable
@@ -129,8 +128,9 @@ from table  =  HSReport {
 when        :: (HSRow -> Bool) -> HSReport -> HSReport
 when f report = addConstraint report f
 
-singleUpdater                            :: HSResultUpdater
+singleUpdater                           :: HSResultUpdater
 singleUpdater (HSSingleResult res) row _ = HSSingleResult (updateRow res row)
+singleUpdater HSEmptyResult row p        = HSSingleResult (updateRow  p row)
 singleUpdater r _ _                      = r
 
 groupUpdater                             :: Key -> HSResultUpdater -> HSResultUpdater
