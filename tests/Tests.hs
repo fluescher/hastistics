@@ -11,8 +11,8 @@ import Hastistics
 
 testCsv             = "a,b,c,d,e\n1,this,is,a,test\n2,and,a,second,test\n3,asd,d,her,stuff\n"
 
-testListTableData   = ListTable ["One", "Other"] [[2,1], [1,2], [2,6]]
-testList            = testListTableData
+testList            = ListTable ["One", "Other"] [[2,1], [1,2], [2,6]]
+testListSimilar     = ListTable ["One", "Other"] [[2,1], [1,2], [2,1], [2,6], [2,6]]
 
 testBinominalTable 	= BinominalTable 4 0.2
 
@@ -48,6 +48,17 @@ multiJoinReport     = valueOf "a" $ valueOf "b" $ valueOf "c" $ valueOf "d" $
                       join (ListTable ["b", "c"] [[1,56]]) "a" "b" $
                       from (ListTable ["a"] [[1]])
 
+multiGroupReport    = valueOf "One" $ valueOf "Other" $
+                      groupBy "One" $
+                      groupBy "Other" $
+                      when (\x -> (fieldValueOf "One" x) == HSInt 2) $
+                      from testList
+
+multiGroupReportS   = valueOf "One" $ valueOf "Other" $
+                      groupBy "One" $
+                      groupBy "Other" $
+                      from testListSimilar
+
 groupedReport       = valueOf "One" $ sumOf "Other" $
                       groupBy "One" $
                       from testList
@@ -64,7 +75,7 @@ toHSInt _ = HSInt 0
 -- Test functions
 testListTable       = TestCase $ assertEqual "Test list conversion" 
                                          [HSInt 2, HSInt 1]
-                                         (valuesOf $ head (dataOf testListTableData))
+                                         (valuesOf $ head (dataOf testList))
 
 testValueOfColumn   = TestCase $ assertEqual "Should get the raw value." [[HSInt 2, HSInt 5, HSDouble 3]] (listValueOf simplestReport)
 
@@ -87,9 +98,13 @@ testMultiJoin       = TestCase $ assertEqual "Should join multiple tables" [[HSI
 
 testCSV             = TestCase $ assertEqual "Should parse CSV" [[HSInt 1, HSInteger 3]] (listValueOf csvReport)
 
+testMultiGroup      = TestCase $ assertEqual "Should have two groups" [[HSInt 2, HSInt 1],[HSInt 2, HSInt 6]] (listValueOf multiGroupReport)
+
+testMultiGroup2     = TestCase $ assertEqual "Shoult have three groups" [[HSInt 1, HSInt 2],[HSInt 2, HSInt 1],[HSInt 2, HSInt 6]] (listValueOf multiGroupReportS)
+
 -- Register test functions here
 listOfTests = [testListTable, testValueOfColumn, testConstraint, testToStrict, testGroupBy, testProbability, testJoin, testJoinToEmpty, testMultiJoin,
-               testCountField, testCSV]
+               testCountField, testCSV, testMultiGroup, testMultiGroup2]
 
 main = do 
           (Counts cases tries errors failures) <- runTestTT $ TestList listOfTests
