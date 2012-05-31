@@ -109,6 +109,24 @@ toDouble = HSDouble . read
 (/) (HSInteger ia)   (HSInteger ib) = HSDouble ((fromIntegral ia) Prelude./ (fromIntegral ib))
 (/) _               _               = None
 
+(*)     :: HSValue -> HSValue -> HSValue
+(*) _               (HSDouble 0)    = HSDouble 0
+(*) _               (HSInt 0)       = HSInt 0
+(*) _               (HSInteger 0)   = HSInteger 0
+(*) (HSDouble 0)    _               = HSDouble 0
+(*) (HSInt 0)       _               = HSInt 0
+(*) (HSInteger 0)   _               = HSInteger 0
+(*) (HSDouble da)   (HSDouble db)   = HSDouble (da Prelude.* db)
+(*) (HSDouble da)   (HSInt ib)      = HSDouble (da Prelude.* (fromIntegral ib))
+(*) (HSDouble da)   (HSInteger ib)  = HSDouble (da Prelude.* (fromIntegral ib))
+(*) (HSInt ia)      (HSDouble db)   = HSDouble ((fromIntegral ia) Prelude.* db)
+(*) (HSInt ia)      (HSInt ib)      = HSDouble ((fromIntegral ia) Prelude.* (fromIntegral ib))
+(*) (HSInt ia)      (HSInteger ib)  = HSDouble ((fromIntegral ia) Prelude.* (fromIntegral ib))
+(*) (HSInteger ia)  (HSDouble db)   = HSDouble ((fromIntegral ia) Prelude.* db)
+(*) (HSInteger ia)  (HSInt ib)      = HSDouble ((fromIntegral ia) Prelude.* (fromIntegral ib))
+(*) (HSInteger ia)  (HSInteger ib)  = HSDouble ((fromIntegral ia) Prelude.* (fromIntegral ib))
+(*) _               _               = None
+
 class (Show f) => HSField f where
     val         :: f -> HSValue
     meta        :: f -> String
