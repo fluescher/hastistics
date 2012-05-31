@@ -5,6 +5,7 @@ import Hastistics.Types
 import Hastistics.Fields
 import qualified Data.Map as Map
 
+{-| Simple implementation of a in memory table. Values are mapped to HSValues  -}
 data ListTable   = ListTable [Key] [[Int]]
 
 instance HSTable ListTable where
@@ -14,26 +15,32 @@ instance HSTable ListTable where
 instance Show ListTable where
     show = showTable
 
+{-| Result Type of a report. -}
 data HSResult   = HSEmptyResult
                 | HSSingleResult HSRow
                 | HSGroupedResult Key HSRow (Map.Map HSValue HSResult) HSResultUpdater
 
+{-| Returns the result data rows of an evaluated report. -}
 reportResult   :: HSReport -> [HSRow]
 reportResult r = resultRows (result r)
 
+{-| Returns the result data rows of an report result. -}
 resultRows     :: HSResult -> [HSRow]
 resultRows HSEmptyResult              = []
 resultRows (HSSingleResult r)         = [r]
 resultRows (HSGroupedResult _ _ rs _) = fromMultiList $ groupedToList [res | (_, res) <- Map.toList rs]
 
+{-| Flattens a list of lists to a list. -}
 fromMultiList         :: [[a]] -> [a]
 fromMultiList (x:xs)  = [v | v <- x] ++ fromMultiList xs
 fromMultiList []      = []
 
+{-| Flattens a grouped result tree structure to a HSRow list. -}
 groupedToList           :: [HSResult] -> [[HSRow]]
 groupedToList (r:rs)    = resultRows r : groupedToList rs
 groupedToList []        = []
 
+{-| Creates a new HSRow.  -}
 toRow        :: [Key] -> [HSValue] -> HSRow
 toRow ks vs  = HSValueRow ks [pack (HSStaticField v) | v <- vs]
 
@@ -56,9 +63,11 @@ data HSReport
                     joiner      :: HSJoiner
               }
 
+{-| Add a calculated field to the definition of the report. -}
 addCalcCol      :: HSField f => HSReport -> f -> HSReport
 addCalcCol r f  = r{proto=HSValueRow ((meta f):(rowHeaders (proto r))) ((pack f):(rowFields (proto r))), headers= meta f : headers r} 
 
+{-| Add a constraint to the constraints of this report. -}
 addConstraint   :: HSReport -> HSConstraint -> HSReport
 addConstraint r f = r{constraints=(\row -> (f row) && (constraints r) row)}
 
@@ -69,6 +78,7 @@ instance HSTable HSReport where
     headersOf       = headers
     dataOf          = reportResult
 
+{- | Because a HSReport is a HSTable, the showTable function is used -}
 instance Show HSReport where
     show = showTable
 
@@ -91,12 +101,13 @@ count   r   = addCalcCol r field
               where field = HSCountField (HSInteger 0)
 
 
-{- |Adds a result column to the report. This column calculates the average
+{- | Adds a result column to the report. This column calculates the average
 value of the value. -}
 avgOf       :: String -> HSReport -> HSReport
 avgOf   h r = addCalcCol r field
               where field = HSAvgField h (HSDouble 0) 0
 
+{- | Calculates the minimum value of a row. -}
 minOf       :: String -> HSReport -> HSReport
 minOf   h r = addCalcCol r field
               where field = HSMinField h (HSDouble infinity)
@@ -111,9 +122,11 @@ infinity = 1 Prelude./ 0
 negativInfinity :: Double
 negativInfinity = -infinity
 
+{- | Updates the existing join function with a new join source. -}
 join        :: HSTable t => t -> Key -> Key -> HSReport -> HSReport
 join t a b r = r {joiner=(joinRow t a b) . (joiner r), sheaders=(sheaders r) ++ (headersOf t)}
 
+{- | Updates the group updater with a new groupKey. -}
 groupBy     :: Key -> HSReport -> HSReport
 groupBy k r = r {updater= groupUpdater k (updater r)}
 
@@ -131,60 +144,70 @@ from table  =  HSReport {
                          joiner=(\a -> a)
                          }
 
-{- |Used to filter input data of a HSReport. -}
+{- | Used to filter input data of a HSReport. -}
 when        :: (HSRow -> Bool) -> HSReport -> HSReport
 when f report = addConstraint report f
 
+
+{- | Function which updates a single result. -}
 singleUpdater                           :: HSResultUpdater
 singleUpdater (HSSingleResult res) row _ = HSSingleResult (updateRow res row)
 singleUpdater HSEmptyResult row p        = HSSingleResult (updateRow  p row)
 singleUpdater r _ _                      = r
 
+{- | Function which updates a grouped result. -}
 groupUpdater                             :: Key -> HSResultUpdater -> HSResultUpdater
 groupUpdater k u (HSSingleResult _) row prot        = makeGroupedResult k u prot row Map.empty
 groupUpdater k u HSEmptyResult      row prot        = makeGroupedResult k u prot row Map.empty
 groupUpdater k u (HSGroupedResult _ _ m _) row prot = makeGroupedResult k u prot row m
 
+{- | Creates a new grouped result. -}
 makeGroupedResult :: Key -> HSResultUpdater -> HSResultPrototype -> HSRow -> Map.Map HSValue HSResult -> HSResult
 makeGroupedResult k u prot row m = HSGroupedResult k prot (Map.alter f (fieldValueOf k row) m) u
                                    where f = updateOrInsert u row prot
 
+{- | Update a given result or create a new one if the result was empty. -}
 updateOrInsert  :: HSResultUpdater -> HSRow -> HSResultPrototype -> Maybe HSResult -> Maybe HSResult
 updateOrInsert  u row prot (Just res)  = Just (u res row prot)
 updateOrInsert  u row prot Nothing     = Just (u HSEmptyResult row prot)
 
+{- | Returns the matches on a given table with equalvalues in the columns specified by the two String arguments and the column
+     in the HSRow. -}
 joinData :: HSTable t => t -> String -> String -> HSRow -> [HSRow]
 joinData tab leftKey rightKey row =  datOrPlaceHolder (Hastistics.Types.lookup rightKey joinVal tab)
                                      where datOrPlaceHolder [] = [toRow (headersOf tab) (take (length (headersOf tab)) (repeat None))]
                                            datOrPlaceHolder xs = xs
                                            joinVal             = fieldValueOf leftKey row
 
+{- | Combines the two rows by appending the second argument on the left side of the first. -}
 combine             :: HSRow -> HSRow -> HSRow
 combine (HSValueRow onehs onefs) (HSValueRow otherhs otherfs)  = HSValueRow (onehs ++ otherhs) (onefs ++ otherfs)
 
+{- | Joins the row with the data of the given table using the two columns identified by the String arguments. -}
 joinRow                     :: HSTable t => t -> String -> String -> HSRow -> HSRow
 joinRow tab left right  row =  combine row (head $ joinData tab left right row)
 
-
+{- | Select the data of the report. This evaluates the report accessing all the source tables. -}
 select      :: HSReport -> HSReport
 select      = evalReport
 
+{- | updates all HSFields int the provided HSRow with the data in the second argument. -}
 updateRow :: HSRow -> HSRow -> HSRow
 updateRow (HSValueRow hs fs) row = HSValueRow hs [pack (update c row) | (HSFieldHolder c) <- fs]
 
+{- | update the HSResult with the data in the second argument using the REsultPrototype -}
 updateResults :: HSResult -> [HSRow] -> HSResultPrototype -> HSResultUpdater -> HSResult
 updateResults res (r:rs)  p u   = updateResults (u res r p) rs p u
 updateResults res []      _ _  = res
 
---updateResult (HSGroupedResult k prot rs) dat    = HSGroupedResult k prot (Map.alter f (fieldValueOf k dat) rs)
-
-
+{- | Returns the joined data from all the source tables.  -}
 sourceData      :: HSReport -> [HSRow]
 sourceData r    = [joinIt row | row <- sourceDat (source r)]
                   where sourceDat (HSTableHolder t)     = dataOf t
                         joinIt                          = setHeader (sheaders r) . joiner r
                         setHeader hs (HSValueRow _ vs)  = HSValueRow hs vs
 
+{- | Evaluates the HSReport definition filling up the result value on the provided HSReport. -}
 evalReport :: HSReport -> HSReport
 evalReport report = report {result= updateResults (HSSingleResult prot) dat prot updat}
                   where updat       = updater report
