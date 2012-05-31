@@ -50,7 +50,16 @@ data HSMinField = HSMinField Key HSValue
 instance HSField HSMinField where
     meta    (HSMinField k _)   = "Min of " ++ k
     val     (HSMinField _ v)   = v
-    update  (HSMinField h v) r  = HSMinField h (min v (fieldValueOf h r))
+    update  (HSMinField h v) r = HSMinField h (min v (fieldValueOf h r))
 
 instance Show HSMinField where
+    show = showField
+
+data HSMaxField = HSMaxField Key HSValue
+instance HSField HSMaxField where
+    meta    (HSMaxField k _)   = "Max of " ++ k
+    val     (HSMaxField _ v)   = v
+    update  (HSMaxField h v) r = HSMaxField h (max v (fieldValueOf h r))
+
+instance Show HSMaxField where
     show = showField
