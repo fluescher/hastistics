@@ -78,7 +78,7 @@ toDouble = HSDouble . read
 (+) (HSString sa)    (HSInt ib)     = HSString (sa Prelude.++ (show ib))
 (+) (HSString sa)    (HSInteger ib) = HSString (sa Prelude.++ (show ib))
 (+) (HSString sa)    (HSString sb)  = HSString (sa Prelude.++ sb)
-(+) _               _               = None
+(+) _                _              = None
 
 (-)     :: HSValue -> HSValue -> HSValue
 (-) (HSDouble da)    (HSDouble db)  = HSDouble (da Prelude.- db)
@@ -90,15 +90,24 @@ toDouble = HSDouble . read
 (-) (HSInteger ia)   (HSDouble db)  = HSDouble ((fromIntegral ia) Prelude.- db)
 (-) (HSInteger ia)   (HSInt ib)     = HSInteger (ia Prelude.- (fromIntegral ib))
 (-) (HSInteger ia)   (HSInteger ib) = HSInteger (ia Prelude.- ib)
-(-) _               _               = None
+(-) _                _              = None
 
 (/)     :: HSValue -> HSValue -> HSValue
-(/) _               (HSInt 0)       = None
 (/) _               (HSDouble 0)    = None
-(/) (HSInt ia)      (HSInt ib)      = HSInt (div ia ib)
+(/) _               (HSInt 0)       = None
+(/) _               (HSInteger 0)   = None
+(/) (HSDouble 0)    _               = HSDouble 0
+(/) (HSInt 0)       _               = HSInt 0
+(/) (HSInteger 0)   _               = HSInteger 0
 (/) (HSDouble da)   (HSDouble db)   = HSDouble (da Prelude./ db)
 (/) (HSDouble da)   (HSInt ib)      = HSDouble (da Prelude./ (fromIntegral ib))
+(/) (HSDouble da)   (HSInteger ib)  = HSDouble (da Prelude./ (fromIntegral ib))
 (/) (HSInt ia)      (HSDouble db)   = HSDouble ((fromIntegral ia) Prelude./ db)
+(/) (HSInt ia)      (HSInt ib)      = HSDouble ((fromIntegral ia) Prelude./ (fromIntegral ib))
+(/) (HSInt ia)      (HSInteger ib)  = HSDouble ((fromIntegral ia) Prelude./ (fromIntegral ib))
+(/) (HSInteger ia)   (HSDouble db)  = HSDouble ((fromIntegral ia) Prelude./ db)
+(/) (HSInteger ia)   (HSInt ib)     = HSDouble ((fromIntegral ia) Prelude./ (fromIntegral ib))
+(/) (HSInteger ia)   (HSInteger ib) = HSDouble ((fromIntegral ia) Prelude./ (fromIntegral ib))
 (/) _               _               = None
 
 class (Show f) => HSField f where
