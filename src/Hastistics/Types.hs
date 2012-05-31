@@ -43,7 +43,14 @@ toDouble = HSDouble . read
 (+) (HSDouble da)    (HSInt ib)    = HSDouble (da Prelude.+ (fromIntegral ib))
 (+) (HSInt ia)       (HSDouble db) = HSDouble ((fromIntegral ia) Prelude.+ db)
 (+) (HSInteger ia)   (HSInteger ib)= HSInteger (ia Prelude.+ ib)
+(+) (HSInteger ia)   (HSInt ib)    = HSInteger (ia Prelude.+ (fromIntegral ib) :: Integer)
+(+) (HSInt ia)       (HSInteger ib)= HSInteger (ib Prelude.+ (fromIntegral ia) :: Integer)
+(+) (HSInteger ia)   (HSDouble ib) = HSDouble (ib Prelude.+ (fromIntegral ia))
+(+) (HSDouble ia)    (HSInteger ib)= HSDouble (ia Prelude.+ (fromIntegral ib))
 (+) _               _              = None
+
+
+
 
 (/)     :: HSValue -> HSValue -> HSValue
 (/) _               (HSInt 0)      = None
