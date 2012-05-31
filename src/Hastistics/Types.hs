@@ -10,7 +10,32 @@ data HSValue
    | HSInteger Integer
    | HSDouble Double
    | None
-   deriving(Eq, Ord)
+   deriving(Eq)
+
+instance Ord HSValue where
+    (<=) (HSString a)   (HSString b)    = a <= b
+    (<=) (HSString a)   (HSInt b)       = a <= show b
+    (<=) (HSString a)   (HSInteger b)   = a <= show b
+    (<=) (HSString a)   (HSDouble b)    = a <= show b
+    
+    (<=) (HSInt a)      (HSInt b)       = a <= b
+    (<=) (HSInt a)      (HSString b)    = show a <= b
+    (<=) (HSInt a)      (HSInteger b)   = (fromIntegral a) <= b
+    (<=) (HSInt a)      (HSDouble b)    = (fromIntegral a) <= b
+    
+    (<=) (HSInteger a)  (HSInteger b)   = a <= b
+    (<=) (HSInteger a)  (HSString b)    = (show a) <= b
+    (<=) (HSInteger a)  (HSInt b)       = a <= (fromIntegral b)
+    (<=) (HSInteger a)  (HSDouble b)    = (fromIntegral a) <= b
+    
+    (<=) (HSDouble a)   (HSDouble b)    = a <= b
+    (<=) (HSDouble a)   (HSString b)    = (show a) <= b
+    (<=) (HSDouble a)   (HSInteger b)   = a <= (fromIntegral b)
+    (<=) (HSDouble a)   (HSInt b)       = a <= (fromIntegral b)
+    
+    (<=) None           None            = True
+    (<=) None           _               = True
+    (<=) _              None            = False
 
 instance Show HSValue where
     show (HSString s)  = s
