@@ -45,12 +45,12 @@ factorial n 	| n < 0  	= error "negative input"
 
 choose :: Integer -> Integer -> Double
 n `choose` k 	| k > n 	= 0
-				| otherwise	= factorial(n) / (factorial(k) * factorial(n-k))
+				| otherwise	= factorial(n) / (factorial(k) * factorial(n Prelude.- k))
 
 binopdf :: Integer -> Integer -> Double -> Double
 binopdf k n p	| k < 0 || k > n	= 0
 	      		| n == 0			= 1
-				| otherwise			= (n `choose` k) * p^k * (1-p)^(n-k)
+				| otherwise			= (n `choose` k) * p^k * (1 Prelude.- p)^(n Prelude.- k)
 
 {- |Returns the comulative binomial distribution. -}
 binocdf :: Integer -> Integer -> Double -> Double
@@ -60,13 +60,13 @@ binocdf k n p 	| k < 0			= 0
 
 hygepdf :: Integer -> Integer -> Integer -> Integer -> Double
 hygepdf k m r n	| n == 0		= 0 
-				| otherwise 	= ((r `choose` k) * ((m-r) `choose` (n-k))) / (m `choose` n)
+				| otherwise 	= ((r `choose` k) * ((m Prelude.- r) `choose` (n Prelude.- k))) / (m `choose` n)
 
 hygecdf :: Integer -> Integer -> Integer -> Integer -> Double
 hygecdf k m r n = sum [hygepdf x m r n | x <- [0..k]]
 
 normpdf :: Double -> Double -> Double -> Double
-normpdf x mu sigma = 1 / (sqrt(2 * pi) * sigma) * exp(1) ** ((-((x - mu) ** 2) / (2 * sigma ** 2)))
+normpdf x mu sigma = 1 / (sqrt(2 * pi) * sigma) * exp(1) ** ((-((x Prelude.- mu) ** 2) / (2 * sigma ** 2)))
 
 poisspdf :: Integer -> Double -> Double
 poisspdf k l = (l ^ k) / (factorial k) * (exp(1) ** (-l))
