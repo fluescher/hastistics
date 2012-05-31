@@ -112,8 +112,15 @@ minOf       :: String -> HSReport -> HSReport
 minOf   h r = addCalcCol r field
               where field = HSMinField h (HSDouble infinity)
 
+maxOf       :: String -> HSReport -> HSReport
+maxOf   h r = addCalcCol r field
+              where field = HSMaxField h (HSDouble negativInfinity)
+
 infinity :: Double
 infinity = 1 Prelude./ 0
+
+negativInfinity :: Double
+negativInfinity = -infinity
 
 {- | Updates the existing join function with a new join source. -}
 join        :: HSTable t => t -> Key -> Key -> HSReport -> HSReport

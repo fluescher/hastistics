@@ -2,6 +2,7 @@ module Hastistics.Fields where
 
 import Hastistics.Types
 
+{- | Static HSField implementation which holds a static value which cannot be updated. -}
 data HSStaticField  = HSStaticField HSValue
 instance HSField HSStaticField where
     val (HSStaticField v)   = v
@@ -9,6 +10,7 @@ instance HSField HSStaticField where
 instance Show HSStaticField where
     show = showField
 
+{- | HSField where the last update call's value is stored. -}
 data HSValueOfField = HSValueOfField Key HSValue
 instance HSField HSValueOfField where
     meta    (HSValueOfField k _)       = "Value of " ++ k
@@ -18,6 +20,7 @@ instance HSField HSValueOfField where
 instance Show HSValueOfField where
     show = showField
 
+{- | HSField which calculates the average of a column. -}
 data HSAvgField = HSAvgField Key HSValue Int
 instance HSField HSAvgField where
     meta    (HSAvgField k _  _  )   = "Average of " ++ k
@@ -28,6 +31,7 @@ instance HSField HSAvgField where
 instance Show HSAvgField where
     show = showField
 
+{- | HSField which count the amount of rows in this result. -}
 data HSCountField = HSCountField HSValue
 instance HSField HSCountField where
     meta    _                  = "Count"
@@ -37,6 +41,7 @@ instance HSField HSCountField where
 instance Show HSCountField where
     show = showField
 
+{- | HSField which calculates the sum of a column -}
 data HSSumField = HSSumField Key HSValue
 instance HSField HSSumField where
     meta    (HSSumField k _)   = "Sum of " ++ k
@@ -46,11 +51,21 @@ instance HSField HSSumField where
 instance Show HSSumField where
     show = showField
 
+{- | HSField which stores the minimum value of a column. -}
 data HSMinField = HSMinField Key HSValue
 instance HSField HSMinField where
     meta    (HSMinField k _)   = "Min of " ++ k
     val     (HSMinField _ v)   = v
-    update  (HSMinField h v) r  = HSMinField h (min v (fieldValueOf h r))
+    update  (HSMinField h v) r = HSMinField h (min v (fieldValueOf h r))
 
 instance Show HSMinField where
+    show = showField
+
+data HSMaxField = HSMaxField Key HSValue
+instance HSField HSMaxField where
+    meta    (HSMaxField k _)   = "Max of " ++ k
+    val     (HSMaxField _ v)   = v
+    update  (HSMaxField h v) r = HSMaxField h (max v (fieldValueOf h r))
+
+instance Show HSMaxField where
     show = showField

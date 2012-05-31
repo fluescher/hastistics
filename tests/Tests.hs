@@ -21,6 +21,8 @@ simplestReport      = valueOf "One" $ sumOf "One" $ avgOf "Other" $
 
 countReport         = count $ from testList
 
+maxReport	    = maxOf "Other" $ from testList
+
 constraintReport    = valueOf "One" $ valueOf "Other" $
                       when (\r -> (fieldValueOf "One" r) == HSInt 1) $
                       from testList
@@ -81,6 +83,8 @@ testValueOfColumn   = TestCase $ assertEqual "Should get the raw value." [[HSInt
 
 testCountField      = TestCase $ assertEqual "Should count the number of rows" [[HSInteger 3]] (listValueOf countReport)
 
+testMaxField	    = TestCase $ assertEqual "Should return the max value of a column" [[HSInt 6]] (listValueOf maxReport)
+
 testConstraint      = TestCase $ assertEqual "Should have filtered out values" [[HSInt 1, HSInt 2]] (listValueOf constraintReport)
 
 testToStrict        = TestCase $ assertEqual "Should have filtered out all values" [[None, HSInt 0, None]] (listValueOf emptyReport)
@@ -88,7 +92,7 @@ testToStrict        = TestCase $ assertEqual "Should have filtered out all value
 
 testGroupBy         = TestCase $ assertEqual "Should be grouped" [[HSInt 1, HSInt 2], [HSInt 2, HSInt 7]] (listValueOf groupedReport)
 
-testProbability		= TestCase $ assertEqual "Should be equal to one" (HSInt 1) (toHSInt $ head $ head (listValueOf probabilityReport))
+testProbability	    = TestCase $ assertEqual "Should be equal to one" (HSInt 1) (toHSInt $ head $ head (listValueOf probabilityReport))
 
 testJoin            = TestCase $ assertEqual "Should be joined with other table" [[HSInt 2, HSInt 4],[HSInt 4, HSInt 8]] (listValueOf joinReport)
 
@@ -104,7 +108,7 @@ testMultiGroup2     = TestCase $ assertEqual "Shoult have three groups" [[HSInt 
 
 -- Register test functions here
 listOfTests = [testListTable, testValueOfColumn, testConstraint, testToStrict, testGroupBy, testProbability, testJoin, testJoinToEmpty, testMultiJoin,
-               testCountField, testCSV, testMultiGroup, testMultiGroup2]
+               testCountField, testCSV, testMultiGroup, testMultiGroup2, testMaxField]
 
 main = do 
           (Counts cases tries errors failures) <- runTestTT $ TestList listOfTests
