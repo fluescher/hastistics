@@ -60,7 +60,6 @@ toInteger = HSInteger . read
 toDouble :: ValueParser
 toDouble = HSDouble . read
 
-
 (+)     :: HSValue -> HSValue -> HSValue
 (+) (HSDouble da)    (HSDouble db)  = HSDouble (da Prelude.+ db)
 (+) (HSDouble da)    (HSInt ib)     = HSDouble (da Prelude.+ (fromIntegral ib))

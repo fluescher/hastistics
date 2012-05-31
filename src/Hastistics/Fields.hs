@@ -61,6 +61,7 @@ instance HSField HSMinField where
 instance Show HSMinField where
     show = showField
 
+{- | HSField which stores the maximum value of a column. -}
 data HSMaxField = HSMaxField Key HSValue
 instance HSField HSMaxField where
     meta    (HSMaxField k _)   = "Max of " ++ k
