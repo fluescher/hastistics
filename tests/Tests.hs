@@ -1,5 +1,6 @@
 module Main where
 
+import Prelude hiding((+))
 import System.Exit (exitSuccess, exitFailure)
 import System.IO (stdout)
 import Test.HUnit
@@ -21,10 +22,14 @@ simplestReport      = valueOf "One" $ sumOf "One" $ avgOf "Other" $
 
 countReport         = count $ from testList
 
-maxReport	    = maxOf "Other" $ from testList
+maxReport	        = maxOf "Other" $ from testList
 
 constraintReport    = valueOf "One" $ valueOf "Other" $
                       when (\r -> (fieldValueOf "One" r) == HSInt 1) $
+                      from testList
+
+custReport          = cust "Mult of" (\_ r -> (fieldValueOf "One" r) + (fieldValueOf "Other" r)) $
+                      groupBy "One" $ groupBy "Other" $
                       from testList
 
 csvReport           = valueOf "a" $ count $
@@ -104,11 +109,13 @@ testCSV             = TestCase $ assertEqual "Should parse CSV" [[HSInt 1, HSInt
 
 testMultiGroup      = TestCase $ assertEqual "Should have two groups" [[HSInt 2, HSInt 1],[HSInt 2, HSInt 6]] (listValueOf multiGroupReport)
 
-testMultiGroup2     = TestCase $ assertEqual "Shoult have three groups" [[HSInt 1, HSInt 2],[HSInt 2, HSInt 1],[HSInt 2, HSInt 6]] (listValueOf multiGroupReportS)
+testMultiGroup2     = TestCase $ assertEqual "Should have three groups" [[HSInt 1, HSInt 2],[HSInt 2, HSInt 1],[HSInt 2, HSInt 6]] (listValueOf multiGroupReportS)
+
+testCust            = TestCase $ assertEqual "Should calcuate the sum" [[HSInt 3], [HSInt 3], [HSInt 8]] (listValueOf custReport)
 
 -- Register test functions here
 listOfTests = [testListTable, testValueOfColumn, testConstraint, testToStrict, testGroupBy, testProbability, testJoin, testJoinToEmpty, testMultiJoin,
-               testCountField, testCSV, testMultiGroup, testMultiGroup2, testMaxField]
+               testCountField, testCSV, testMultiGroup, testMultiGroup2, testMaxField, testCust]
 
 main = do 
           (Counts cases tries errors failures) <- runTestTT $ TestList listOfTests

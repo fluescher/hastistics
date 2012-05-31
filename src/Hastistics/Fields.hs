@@ -61,6 +61,7 @@ instance HSField HSMinField where
 instance Show HSMinField where
     show = showField
 
+{- | HSField which stores the max value of a column. -}
 data HSMaxField = HSMaxField Key HSValue
 instance HSField HSMaxField where
     meta    (HSMaxField k _)   = "Max of " ++ k
@@ -68,4 +69,14 @@ instance HSField HSMaxField where
     update  (HSMaxField h v) r = HSMaxField h (max v (fieldValueOf h r))
 
 instance Show HSMaxField where
+    show = showField
+{- | Custom field which allows the user to specify a own update function. -}
+data HSCustField = HSCustField String HSValue (HSValue -> HSRow -> HSValue)
+
+instance HSField HSCustField where
+    meta    (HSCustField s _ _)     = s
+    val     (HSCustField _ v _)     = v
+    update  (HSCustField s v f)  r  = HSCustField s (f v r) f
+
+instance Show HSCustField where
     show = showField

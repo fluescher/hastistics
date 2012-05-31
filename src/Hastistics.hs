@@ -107,11 +107,12 @@ avgOf       :: String -> HSReport -> HSReport
 avgOf   h r = addCalcCol r field
               where field = HSAvgField h (HSDouble 0) 0
 
-{- | Calculates the minimum value of a row. -}
+{- | Calculates the minimum value of a column. -}
 minOf       :: String -> HSReport -> HSReport
 minOf   h r = addCalcCol r field
               where field = HSMinField h (HSDouble infinity)
 
+{- | Calculates the max value of a column. -}
 maxOf       :: String -> HSReport -> HSReport
 maxOf   h r = addCalcCol r field
               where field = HSMaxField h (HSDouble negativInfinity)
@@ -121,6 +122,11 @@ infinity = 1 Prelude./ 0
 
 negativInfinity :: Double
 negativInfinity = -infinity
+
+{- | Add a custom calculation. -}
+cust        :: String -> (HSValue -> HSRow -> HSValue) -> HSReport -> HSReport
+cust s f r  = addCalcCol r field
+              where field = HSCustField s None (f) 
 
 {- | Updates the existing join function with a new join source. -}
 join        :: HSTable t => t -> Key -> Key -> HSReport -> HSReport
