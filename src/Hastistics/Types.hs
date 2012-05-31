@@ -37,29 +37,32 @@ toDouble = HSDouble . read
 
 
 (+)     :: HSValue -> HSValue -> HSValue
-(+) (HSString sa)    (HSString sb) = HSString (sa Prelude.++ sb)
-(+) (HSInt ia)       (HSInt ib)    = HSInt (ia Prelude.+ ib)
-(+) (HSDouble da)    (HSDouble db) = HSDouble (da Prelude.+ db)
-(+) (HSDouble da)    (HSInt ib)    = HSDouble (da Prelude.+ (fromIntegral ib))
-(+) (HSInt ia)       (HSDouble db) = HSDouble ((fromIntegral ia) Prelude.+ db)
-(+) (HSInteger ia)   (HSInteger ib)= HSInteger (ia Prelude.+ ib)
-(+) (HSInteger ia)   (HSInt ib)    = HSInteger (ia Prelude.+ (fromIntegral ib) :: Integer)
-(+) (HSInt ia)       (HSInteger ib)= HSInteger (ib Prelude.+ (fromIntegral ia) :: Integer)
-(+) (HSInteger ia)   (HSDouble ib) = HSDouble (ib Prelude.+ (fromIntegral ia))
-(+) (HSDouble ia)    (HSInteger ib)= HSDouble (ia Prelude.+ (fromIntegral ib))
-(+) _               _              = None
-
-
-
+(+) (HSDouble da)    (HSDouble db)  = HSDouble (da Prelude.+ db)
+(+) (HSDouble da)    (HSInt ib)     = HSDouble (da Prelude.+ (fromIntegral ib))
+(+) (HSDouble da)    (HSInteger ib) = HSDouble (da Prelude.+ (fromIntegral ib))
+(+) (HSDouble da)    (HSString sb)  = HSString ((show da) Prelude.++ sb)
+(+) (HSInt ia)       (HSDouble db)  = HSDouble ((fromIntegral ia) Prelude.+ db)
+(+) (HSInt ia)       (HSInt ib)     = HSInt (ia Prelude.+ ib)
+(+) (HSInt ia)       (HSInteger ib) = HSInteger ((fromIntegral ia) Prelude.+ ib)
+(+) (HSInt ia)       (HSString sb)  = HSString ((show ia) Prelude.++ sb)
+(+) (HSInteger ia)   (HSDouble db)  = HSDouble ((fromIntegral ia) Prelude.+ db)
+(+) (HSInteger ia)   (HSInt ib)     = HSInteger (ia Prelude.+ (fromIntegral ib))
+(+) (HSInteger ia)   (HSInteger ib) = HSInteger (ia Prelude.+ ib)
+(+) (HSInteger ia)   (HSString sb)  = HSString ((show ia) Prelude.++ sb)
+(+) (HSString sa)    (HSDouble db)  = HSString (sa Prelude.++ (show db))
+(+) (HSString sa)    (HSInt ib)     = HSString (sa Prelude.++ (show ib))
+(+) (HSString sa)    (HSInteger ib) = HSString (sa Prelude.++ (show ib))
+(+) (HSString sa)    (HSString sb)  = HSString (sa Prelude.++ sb)
+(+) _               _               = None
 
 (/)     :: HSValue -> HSValue -> HSValue
-(/) _               (HSInt 0)      = None
-(/) _               (HSDouble 0)   = None
-(/) (HSInt ia)      (HSInt ib)     = HSInt (div ia ib)
-(/) (HSDouble da)   (HSDouble db)  = HSDouble (da Prelude./ db)
-(/) (HSDouble da)   (HSInt ib)     = HSDouble (da Prelude./ (fromIntegral ib))
-(/) (HSInt ia)      (HSDouble db)  = HSDouble ((fromIntegral ia) Prelude./ db)
-(/) _               _              = None
+(/) _               (HSInt 0)       = None
+(/) _               (HSDouble 0)    = None
+(/) (HSInt ia)      (HSInt ib)      = HSInt (div ia ib)
+(/) (HSDouble da)   (HSDouble db)   = HSDouble (da Prelude./ db)
+(/) (HSDouble da)   (HSInt ib)      = HSDouble (da Prelude./ (fromIntegral ib))
+(/) (HSInt ia)      (HSDouble db)   = HSDouble ((fromIntegral ia) Prelude./ db)
+(/) _               _               = None
 
 class (Show f) => HSField f where
     val         :: f -> HSValue
@@ -127,7 +130,7 @@ showRow         :: (Show a) => [a] -> String
 showRow []      = "|"
 showRow (k:ks)  = "| " ++ v ++ space ++ " " ++ showRow ks
                 where   v       = take colWidth (show k)
-                        space   = take (colWidth-(length v)) (repeat ' ')
+                        space   = take (colWidth Prelude.- (length v)) (repeat ' ')
 
 showRows        :: [HSRow] -> String
 showRows []     = ""
