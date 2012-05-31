@@ -57,7 +57,7 @@ data HSReport
               }
 
 addCalcCol      :: HSField f => HSReport -> f -> HSReport
-addCalcCol r f  = r{proto=HSValueRow ((meta f):(rowHeaders (proto r))) ((pack f):(rowFields (proto r)))} 
+addCalcCol r f  = r{proto=HSValueRow ((meta f):(rowHeaders (proto r))) ((pack f):(rowFields (proto r))), headers= meta f : headers r} 
 
 addConstraint   :: HSReport -> HSConstraint -> HSReport
 addConstraint r f = r{constraints=(\row -> (f row) && (constraints r) row)}
