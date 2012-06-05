@@ -13,7 +13,7 @@ instance Show HSStaticField where
 {- | HSField where the last update call's value is stored. -}
 data HSValueOfField = HSValueOfField Key HSValue
 instance HSField HSValueOfField where
-    meta    (HSValueOfField k _)       = "Value of " ++ k
+    meta    (HSValueOfField k _)       = k
     val     (HSValueOfField _ v)       = v 
     update  (HSValueOfField h None) r  = HSValueOfField h (fieldValueOf h r)
     update  f _                        = f
