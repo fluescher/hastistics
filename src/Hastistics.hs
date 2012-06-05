@@ -174,13 +174,13 @@ singleUpdater r _ _                      = r
 
 {- | Function which updates a grouped result. -}
 groupUpdater                             :: Key -> HSResultUpdater -> HSResultUpdater
-groupUpdater k u (HSGroupedResult _ _ m _) row prot = makeGroupedResult k u prot row m
-groupUpdater k u _  row prot                        = makeGroupedResult k u prot row Map.empty
+groupUpdater k u (HSGroupedResult _ _ m _) row prot = updateGroupedResult k u prot row m
+groupUpdater k u _  row prot                        = updateGroupedResult k u prot row Map.empty
 
-{- | Creates a new grouped result. -}
-makeGroupedResult :: Key -> HSResultUpdater -> HSResultPrototype -> HSRow -> Map.Map HSValue HSResult -> HSResult
-makeGroupedResult k u prot row m = HSGroupedResult k prot (Map.alter f (fieldValueOf k row) m) u
-                                   where f = updateOrInsert u row prot
+{- | Updates a grouped result. -}
+updateGroupedResult :: Key -> HSResultUpdater -> HSResultPrototype -> HSRow -> Map.Map HSValue HSResult -> HSResult
+updateGroupedResult k u prot row m = HSGroupedResult k prot (Map.alter f (fieldValueOf k row) m) u
+                                     where f = updateOrInsert u row prot
 
 {- | Update a given result or create a new one if the result was empty. -}
 updateOrInsert  :: HSResultUpdater -> HSRow -> HSResultPrototype -> Maybe HSResult -> Maybe HSResult

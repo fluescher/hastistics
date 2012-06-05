@@ -3,6 +3,11 @@ import Hastistics.Distributions
 import Hastistics.Types
 import Hastistics.Data.CSV
 
+simpleReport :: HSTable t => t -> HSReport
+simpleReport t = select $
+                 avgOf "Punkte" $ avgOf "Note" $
+                 from t
+
 genderReport :: HSTable t => t -> HSReport 
 genderReport t = select $
                  valueOf "Geschlecht" $ avgOf "Note" $ avgOf "Punkte" $
@@ -29,4 +34,6 @@ klassenDaten s = csvTable [toString, toString, toString, toInt, toDouble, toDoub
 
 main :: IO ()
 main = do   dat  <- readFile "chrg.csv"
-            print (genderCount (genderGroupe (klassenDaten dat)))
+            --print (simpleReport (klassenDaten dat))
+            -rint (genderCount (genderGroupe (klassenDaten dat)))
+            --print (genderReport (klassenDaten dat))
