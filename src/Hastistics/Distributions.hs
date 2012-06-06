@@ -18,9 +18,10 @@ instance Show BinominalTable where
 data HypergeometricTable = HypergeometricTable Integer Integer Integer
 	  
 instance HSTable HypergeometricTable where
-	headersOf _ = header
-	dataOf (HypergeometricTable m r n) = [toHSRow k (hygepdf k m r n) | k <- [0..r]]
-	lookup _ _ _ = []
+    headersOf _ = header
+    dataOf (HypergeometricTable m r n)                   = [toHSRow k (hygepdf k m r n) | k <- [0..r]]
+    lookup "k" (HSInteger k) (HypergeometricTable m r n) = [toHSRow k (hygepdf k m r n)]
+    lookup _ _ _                                         = []
 	 
 instance Show HypergeometricTable where
 	show = showTable
