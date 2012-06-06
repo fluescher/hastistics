@@ -21,7 +21,7 @@ simplestReport      = valueOf "One" $ sumOf "One" $ avgOf "Other" $
 
 countReport         = count $ from testList
 
-maxReport	    = maxOf "Other" $ from testList
+maxReport	        = maxOf "Other" $ from testList
 
 constraintReport    = valueOf "One" $ valueOf "Other" $
                       when (\r -> (fieldValueOf "One" r) == HSInt 1) $

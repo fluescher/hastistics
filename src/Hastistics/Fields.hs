@@ -1,6 +1,7 @@
 module Hastistics.Fields where
 
 import Hastistics.Types
+import Data.List
 
 {- | Static HSField implementation which holds a static value which cannot be updated. -}
 data HSStaticField  = HSStaticField HSValue
@@ -69,4 +70,23 @@ instance HSField HSMaxField where
     update  (HSMaxField h v) r = HSMaxField h (max v (fieldValueOf h r))
 
 instance Show HSMaxField where
+    show = showField
+    
+{- | HSField which stores the maximum value of a column. -}
+data HSMedianField = HSMedianField Key [HSValue]
+instance HSField HSMedianField where
+    meta    (HSMedianField k _)    = "Median of " ++ k
+    val     (HSMedianField _ vs)   = median vs
+    update  (HSMedianField h vs) r = HSMedianField h (fieldValueOf h r : vs)
+
+median :: [HSValue] -> HSValue
+median vs   | length vs == 0    = error "empty list"
+            | length vs == 1    = head vs
+			| even (length vs)  = (first Hastistics.Types.+ second) Hastistics.Types./ (HSDouble 2)
+			| otherwise			= first
+								where   sortVs  = sort vs
+								        first   = sortVs !! ((length vs) `div` 2)
+								        second  = sortVs !! (((length vs) `div` 2) Prelude.- 1)
+										
+instance Show HSMedianField where
     show = showField

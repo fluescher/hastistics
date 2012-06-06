@@ -5,7 +5,7 @@ import Hastistics.Types
 import Hastistics.Fields
 import qualified Data.Map as Map
 
-{-| Simple implementation of a in memory table. Values are mapped to HSValues  -}
+{- | Simple implementation of a in memory table. Values are mapped to HSValues  -}
 data ListTable   = ListTable [Key] [[Int]]
 
 instance HSTable ListTable where
@@ -15,32 +15,32 @@ instance HSTable ListTable where
 instance Show ListTable where
     show = showTable
 
-{-| Result Type of a report. -}
+{- | Result Type of a report. -}
 data HSResult   = HSEmptyResult
                 | HSSingleResult HSRow
                 | HSGroupedResult Key HSRow (Map.Map HSValue HSResult) HSResultUpdater
 
-{-| Returns the result data rows of an evaluated report. -}
+{- | Returns the result data rows of an evaluated report. -}
 reportResult   :: HSReport -> [HSRow]
 reportResult r = resultRows (result r)
 
-{-| Returns the result data rows of an report result. -}
+{- | Returns the result data rows of an report result. -}
 resultRows     :: HSResult -> [HSRow]
 resultRows HSEmptyResult              = []
 resultRows (HSSingleResult r)         = [r]
 resultRows (HSGroupedResult _ _ rs _) = fromMultiList $ groupedToList [res | (_, res) <- Map.toList rs]
 
-{-| Flattens a list of lists to a list. -}
+{- | Flattens a list of lists to a list. -}
 fromMultiList         :: [[a]] -> [a]
 fromMultiList (x:xs)  = [v | v <- x] ++ fromMultiList xs
 fromMultiList []      = []
 
-{-| Flattens a grouped result tree structure to a HSRow list. -}
+{- | Flattens a grouped result tree structure to a HSRow list. -}
 groupedToList           :: [HSResult] -> [[HSRow]]
 groupedToList (r:rs)    = resultRows r : groupedToList rs
 groupedToList []        = []
 
-{-| Creates a new HSRow.  -}
+{- | Creates a new HSRow.  -}
 toRow        :: [Key] -> [HSValue] -> HSRow
 toRow ks vs  = HSValueRow ks [pack (HSStaticField v) | v <- vs]
 
@@ -121,6 +121,11 @@ infinity = 1 Prelude./ 0
 
 negativInfinity :: Double
 negativInfinity = -infinity
+
+{- | Calculates the minimum value of a row. -}
+medianOf       :: String -> HSReport -> HSReport
+medianOf   h r = addCalcCol r field
+              where field = HSMedianField h []
 
 {- | Updates the existing join function with a new join source. -}
 join        :: HSTable t => t -> Key -> Key -> HSReport -> HSReport
