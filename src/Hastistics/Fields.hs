@@ -14,7 +14,7 @@ instance Show HSStaticField where
 {- | HSField where the last update call's value is stored. -}
 data HSValueOfField = HSValueOfField Key HSValue
 instance HSField HSValueOfField where
-    meta    (HSValueOfField k _)       = "Value of " ++ k
+    meta    (HSValueOfField k _)       = k
     val     (HSValueOfField _ v)       = v 
     update  (HSValueOfField h None) r  = HSValueOfField h (fieldValueOf h r)
     update  f _                        = f
@@ -62,7 +62,7 @@ instance HSField HSMinField where
 instance Show HSMinField where
     show = showField
 
-{- | HSField which stores the maximum value of a column. -}
+{- | HSField which stores the max value of a column. -}
 data HSMaxField = HSMaxField Key HSValue
 instance HSField HSMaxField where
     meta    (HSMaxField k _)   = "Max of " ++ k
@@ -79,6 +79,7 @@ instance HSField HSMedianField where
     val     (HSMedianField _ vs)   = median vs
     update  (HSMedianField h vs) r = HSMedianField h (fieldValueOf h r : vs)
 
+{- | HSField which stores the median value of a column. -}
 median :: [HSValue] -> HSValue
 median vs   | length vs == 0    = error "empty list"
             | length vs == 1    = head vs
@@ -89,4 +90,13 @@ median vs   | length vs == 0    = error "empty list"
 								        second  = sortVs !! (((length vs) `div` 2) Prelude.- 1)
 										
 instance Show HSMedianField where
+{- | Custom field which allows the user to specify a own update function. -}
+data HSCustField = HSCustField String HSValue (HSValue -> HSRow -> HSValue)
+
+instance HSField HSCustField where
+    meta    (HSCustField s _ _)     = s
+    val     (HSCustField _ v _)     = v
+    update  (HSCustField s v f)  r  = HSCustField s (f v r) f
+
+instance Show HSCustField where
     show = showField

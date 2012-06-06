@@ -18,6 +18,7 @@ instance Show ListTable where
 {- | Result Type of a report. -}
 data HSResult   = HSEmptyResult
                 | HSSingleResult HSRow
+                | HSByRowResult [HSRow]
                 | HSGroupedResult Key HSRow (Map.Map HSValue HSResult) HSResultUpdater
 
 {- | Returns the result data rows of an evaluated report. -}
@@ -29,6 +30,8 @@ resultRows     :: HSResult -> [HSRow]
 resultRows HSEmptyResult              = []
 resultRows (HSSingleResult r)         = [r]
 resultRows (HSGroupedResult _ _ rs _) = fromMultiList $ groupedToList [res | (_, res) <- Map.toList rs]
+resultRows (HSByRowResult rs)         = rs
+
 
 {- | Flattens a list of lists to a list. -}
 fromMultiList         :: [[a]] -> [a]
@@ -107,14 +110,19 @@ avgOf       :: String -> HSReport -> HSReport
 avgOf   h r = addCalcCol r field
               where field = HSAvgField h (HSDouble 0) 0
 
-{- | Calculates the minimum value of a row. -}
+{- | Calculates the minimum value of a column. -}
 minOf       :: String -> HSReport -> HSReport
 minOf   h r = addCalcCol r field
               where field = HSMinField h (HSDouble infinity)
 
+{- | Calculates the max value of a column. -}
 maxOf       :: String -> HSReport -> HSReport
 maxOf   h r = addCalcCol r field
               where field = HSMaxField h (HSDouble negativInfinity)
+
+{- | Returns the Result by Row -}
+byrow       :: HSReport -> HSReport
+byrow    r  = r {updater= byrowUpdater}
 
 infinity :: Double
 infinity = 1 Prelude./ 0
@@ -122,10 +130,14 @@ infinity = 1 Prelude./ 0
 negativInfinity :: Double
 negativInfinity = -infinity
 
-{- | Calculates the minimum value of a row. -}
+{- | Calculates the median of a row. -}
 medianOf       :: String -> HSReport -> HSReport
 medianOf   h r = addCalcCol r field
               where field = HSMedianField h []
+{- | Add a custom calculation. -}
+cust        :: String -> (HSValue -> HSRow -> HSValue) -> HSReport -> HSReport
+cust s f r  = addCalcCol r field
+              where field = HSCustField s None (f) 
 
 {- | Updates the existing join function with a new join source. -}
 join        :: HSTable t => t -> Key -> Key -> HSReport -> HSReport
@@ -135,7 +147,7 @@ join t a b r = r {joiner=(joinRow t a b) . (joiner r), sheaders=(sheaders r) ++ 
 groupBy     :: Key -> HSReport -> HSReport
 groupBy k r = r {updater= groupUpdater k (updater r)}
 
-{- |Starting Point for every report run. Creates a new HSReport from 
+{- |Starting Point for every report. Creates a new HSReport from 
 a HSTable. -}
 from        :: HSTable t => t -> HSReport
 from table  =  HSReport {
@@ -153,6 +165,10 @@ from table  =  HSReport {
 when        :: (HSRow -> Bool) -> HSReport -> HSReport
 when f report = addConstraint report f
 
+{- | Updates the result row by row -}
+byrowUpdater                          :: HSResultUpdater
+byrowUpdater (HSByRowResult rs) row p = HSByRowResult ((updateRow p row):rs)
+byrowUpdater _ row p      = HSByRowResult [updateRow p row]
 
 {- | Function which updates a single result. -}
 singleUpdater                           :: HSResultUpdater
@@ -162,14 +178,13 @@ singleUpdater r _ _                      = r
 
 {- | Function which updates a grouped result. -}
 groupUpdater                             :: Key -> HSResultUpdater -> HSResultUpdater
-groupUpdater k u (HSSingleResult _) row prot        = makeGroupedResult k u prot row Map.empty
-groupUpdater k u HSEmptyResult      row prot        = makeGroupedResult k u prot row Map.empty
-groupUpdater k u (HSGroupedResult _ _ m _) row prot = makeGroupedResult k u prot row m
+groupUpdater k u (HSGroupedResult _ _ m _) row prot = updateGroupedResult k u prot row m
+groupUpdater k u _  row prot                        = updateGroupedResult k u prot row Map.empty
 
-{- | Creates a new grouped result. -}
-makeGroupedResult :: Key -> HSResultUpdater -> HSResultPrototype -> HSRow -> Map.Map HSValue HSResult -> HSResult
-makeGroupedResult k u prot row m = HSGroupedResult k prot (Map.alter f (fieldValueOf k row) m) u
-                                   where f = updateOrInsert u row prot
+{- | Updates a grouped result. -}
+updateGroupedResult :: Key -> HSResultUpdater -> HSResultPrototype -> HSRow -> Map.Map HSValue HSResult -> HSResult
+updateGroupedResult k u prot row m = HSGroupedResult k prot (Map.alter f (fieldValueOf k row) m) u
+                                     where f = updateOrInsert u row prot
 
 {- | Update a given result or create a new one if the result was empty. -}
 updateOrInsert  :: HSResultUpdater -> HSRow -> HSResultPrototype -> Maybe HSResult -> Maybe HSResult
