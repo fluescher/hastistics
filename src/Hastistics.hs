@@ -19,7 +19,7 @@ instance Show ListTable where
 data HSResult   = HSEmptyResult
                 | HSSingleResult HSRow
                 | HSByRowResult [HSRow]
-                | HSGroupedResult Key HSRow (Map.Map HSValue HSResult) HSResultUpdater
+                | HSGroupedResult (Map.Map HSValue HSResult)
 
 {- | Returns the result data rows of an evaluated report. -}
 reportResult   :: HSReport -> [HSRow]
@@ -29,7 +29,7 @@ reportResult r = resultRows (result r)
 resultRows     :: HSResult -> [HSRow]
 resultRows HSEmptyResult              = []
 resultRows (HSSingleResult r)         = [r]
-resultRows (HSGroupedResult _ _ rs _) = fromMultiList $ groupedToList [res | (_, res) <- Map.toList rs]
+resultRows (HSGroupedResult rs)       = fromMultiList $ groupedToList [res | (_, res) <- Map.toList rs]
 resultRows (HSByRowResult rs)         = rs
 
 
@@ -166,9 +166,9 @@ when        :: (HSRow -> Bool) -> HSReport -> HSReport
 when f report = addConstraint report f
 
 {- | Updates the result row by row -}
-byrowUpdater                          :: HSResultUpdater
-byrowUpdater (HSByRowResult rs) row p = HSByRowResult ((updateRow p row):rs)
-byrowUpdater _ row p      = HSByRowResult [updateRow p row]
+byrowUpdater                            :: HSResultUpdater
+byrowUpdater (HSByRowResult rs) row p    = HSByRowResult ((updateRow p row):rs)
+byrowUpdater _ row p      		 = HSByRowResult [updateRow p row]
 
 {- | Function which updates a single result. -}
 singleUpdater                           :: HSResultUpdater
@@ -178,12 +178,12 @@ singleUpdater r _ _                      = r
 
 {- | Function which updates a grouped result. -}
 groupUpdater                             :: Key -> HSResultUpdater -> HSResultUpdater
-groupUpdater k u (HSGroupedResult _ _ m _) row prot = updateGroupedResult k u prot row m
-groupUpdater k u _  row prot                        = updateGroupedResult k u prot row Map.empty
+groupUpdater k u (HSGroupedResult m) row prot    = updateGroupedResult k u prot row m
+groupUpdater k u _  row prot                     = updateGroupedResult k u prot row Map.empty
 
 {- | Updates a grouped result. -}
 updateGroupedResult :: Key -> HSResultUpdater -> HSResultPrototype -> HSRow -> Map.Map HSValue HSResult -> HSResult
-updateGroupedResult k u prot row m = HSGroupedResult k prot (Map.alter f (fieldValueOf k row) m) u
+updateGroupedResult k u prot row m = HSGroupedResult (Map.alter f (fieldValueOf k row) m)
                                      where f = updateOrInsert u row prot
 
 {- | Update a given result or create a new one if the result was empty. -}
