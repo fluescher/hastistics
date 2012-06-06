@@ -48,18 +48,23 @@ type Key = String
 
 type ValueParser = (String -> HSValue)
 
+{-| Cast String to HSString -}
 toString :: ValueParser
 toString = HSString
 
+{-| Cast String to HSInt -}
 toInt    :: ValueParser
 toInt    = HSInt . read
 
+{-| Cast String to HSInteger -}
 toInteger :: ValueParser 
 toInteger = HSInteger . read
 
+{-| Cast String to HSDouble -}
 toDouble :: ValueParser
 toDouble = HSDouble . read
 
+{-| Definitions for arithmetic operations on HSValues  -}
 (+)     :: HSValue -> HSValue -> HSValue
 (+) (HSDouble da)    (HSDouble db)  = HSDouble (da Prelude.+ db)
 (+) (HSDouble da)    (HSInt ib)     = HSDouble (da Prelude.+ (fromIntegral ib))
@@ -134,6 +139,7 @@ class (Show f) => HSField f where
     update      :: f -> HSRow -> f
     update fi _ =  fi
 
+{-| get the value of the HSField and cast it to String -}
 showField :: (HSField a) => a -> String
 showField = show . val
 
