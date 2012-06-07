@@ -9,8 +9,10 @@ header = ["k", "p"]
 data BinominalTable = BinominalTable Integer Double
 
 instance HSTable BinominalTable where
-	headersOf _ = header 
-	dataOf (BinominalTable n p) = [toHSRow k (binopdf k n p) | k <- [0..n]]  
+    headersOf _                                     = header 
+    dataOf (BinominalTable n p)                     = [toHSRow k (binopdf k n p) | k <- [0..n]]
+    lookup "k" (HSInteger k) (BinominalTable n p)   = [toHSRow k (binopdf k n p)]
+    lookup _ _ _                                    = []  
 
 instance Show BinominalTable where
     show = showTable
@@ -29,9 +31,10 @@ instance Show HypergeometricTable where
 data PossionTable = PossionTable Integer Double
 	  
 instance HSTable PossionTable where
-	headersOf _ = header
-	dataOf (PossionTable k l) = [toHSRow x (poisspdf  x l) | x <- [0..k]]
-	lookup _ _ _ = []
+    headersOf _                                 = header
+    dataOf (PossionTable k l)                   = [toHSRow x (poisspdf x l) | x <- [0..k]]
+    lookup "k" (HSInteger x) (PossionTable _ l) = [toHSRow x (poisspdf x l)]
+    lookup _ _ _                                = []
 	 
 instance Show PossionTable where
 	show = showTable
