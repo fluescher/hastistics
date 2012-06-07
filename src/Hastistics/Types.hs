@@ -49,20 +49,40 @@ type Key = String
 type ValueParser = (String -> HSValue)
 
 {-| Cast String to HSString -}
-toString :: ValueParser
-toString = HSString
+toHSString :: ValueParser
+toHSString = HSString
 
 {-| Cast String to HSInt -}
-toInt    :: ValueParser
-toInt    = HSInt . read
+toHSInt    :: ValueParser
+toHSInt    = HSInt . read
 
 {-| Cast String to HSInteger -}
-toInteger :: ValueParser 
-toInteger = HSInteger . read
+toHSInteger :: ValueParser 
+toHSInteger = HSInteger . read
 
 {-| Cast String to HSDouble -}
-toDouble :: ValueParser
-toDouble = HSDouble . read
+toHSDouble :: ValueParser
+toHSDouble = HSDouble . read
+
+{-| Cast HSString to String -}
+fromHSStringToString :: HSValue -> String
+fromHSStringToString (HSString s) = s
+fromHSStringToString _            = ""
+
+{-| Cast HSInt to Int -}
+fromHSIntToInt :: HSValue -> Int
+fromHSIntToInt (HSInt i)    = i
+fromHSIntToInt _            = 0
+
+{-| Cast HSInteger to Integer -}
+fromHSIntegerToInteger :: HSValue -> Integer
+fromHSIntegerToInteger (HSInteger i) = i
+fromHSIntegerToInteger _             = 0
+
+{-| Cast HSDouble to Double -}
+fromHSDoubleToDouble :: HSValue -> Double
+fromHSDoubleToDouble (HSDouble d)  = d
+fromHSDoubleToDouble _             = 0
 
 {-| Definitions for arithmetic operations on HSValues  -}
 (+)     :: HSValue -> HSValue -> HSValue

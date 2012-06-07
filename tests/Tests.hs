@@ -33,7 +33,7 @@ custReport          = cust "Mult of" (\_ r -> (fieldValueOf "One" r) + (fieldVal
                       from testList
 
 csvReport           = valueOf "a" $ count $
-                      from (csvTable [toInt, toString, toString, toString, toString] testCsv)
+                      from (csvTable [toHSInt, toHSString, toHSString, toHSString, toHSString] testCsv)
 
 emptyReport         = valueOf "One" $ sumOf "One" $ avgOf "One" $
                       when (\r -> (fieldValueOf "One" r)    == HSInt 1) $
@@ -75,9 +75,9 @@ probabilityReport	= sumOf "p" $
 
 listValueOf rep = [valuesOf r | r <- dataOf (select rep)]
 
-toHSInt :: HSValue -> HSValue
-toHSInt (HSDouble d) = HSInt(floor d)
-toHSInt _ = HSInt 0
+fromHSDoubletoHSInt :: HSValue -> HSValue
+fromHSDoubletoHSInt (HSDouble d)    = HSInt(floor d)
+fromHSDoubletoHSInt _               = HSInt 0
 
 -- Test functions
 testListTable       = TestCase $ assertEqual "Test list conversion" 
@@ -97,7 +97,7 @@ testToStrict        = TestCase $ assertEqual "Should have filtered out all value
 
 testGroupBy         = TestCase $ assertEqual "Should be grouped" [[HSInt 1, HSInt 2], [HSInt 2, HSInt 7]] (listValueOf groupedReport)
 
-testProbability	    = TestCase $ assertEqual "Should be equal to one" (HSInt 1) (toHSInt $ head $ head (listValueOf probabilityReport))
+testProbability	    = TestCase $ assertEqual "Should be equal to one" (HSInt 1) (fromHSDoubletoHSInt $ head $ head (listValueOf probabilityReport))
 
 testJoin            = TestCase $ assertEqual "Should be joined with other table" [[HSInt 2, HSInt 4],[HSInt 4, HSInt 8]] (listValueOf joinReport)
 
