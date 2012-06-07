@@ -222,7 +222,7 @@ updateResults res []      _ _  = res
 
 {- | Returns the joined data from all the source tables.  -}
 sourceData      :: HSReport -> [HSRow]
-sourceData r    = [joinIt row | row <- sourceDat (source r)]
+sourceData r    = map (joinIt) (sourceDat (source r))
                   where sourceDat (HSTableHolder t)     = dataOf t
                         joinIt                          = setHeader (sheaders r) . joiner r
                         setHeader hs (HSValueRow _ vs)  = HSValueRow hs vs
