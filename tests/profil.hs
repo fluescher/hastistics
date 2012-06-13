@@ -53,7 +53,7 @@ main              = do marksData    <- readFile "noten.csv"
                        print (joined students (averages marks))
                        getChar
 
-                       putStrLn "Gruppieren nach Prifilierung..."
+                       putStrLn "Gruppieren nach Profilierung..."
                        print (profile (joined students (averages marks)))
                                    
 
