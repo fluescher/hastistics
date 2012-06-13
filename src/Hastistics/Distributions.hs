@@ -28,15 +28,15 @@ instance HSTable HypergeometricTable where
 instance Show HypergeometricTable where
 	show = showTable
 
-data PossionTable = PossionTable Integer Double
+data PoissonTable = PoissonTable Integer Double
 	  
-instance HSTable PossionTable where
+instance HSTable PoissonTable where
     headersOf _                                 = header
-    dataOf (PossionTable k l)                   = [toHSRow x (poisspdf x l) | x <- [0..k]]
-    lookup "k" (HSInteger x) (PossionTable _ l) = [toHSRow x (poisspdf x l)]
+    dataOf (PoissonTable k l)                   = [toHSRow x (poisspdf x l) | x <- [0..k]]
+    lookup "k" (HSInteger x) (PoissonTable _ l) = [toHSRow x (poisspdf x l)]
     lookup _ _ _                                = []
 	 
-instance Show PossionTable where
+instance Show PoissonTable where
 	show = showTable
 
 toHSRow :: Integer -> Double -> HSRow
