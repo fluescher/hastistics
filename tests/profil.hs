@@ -15,7 +15,7 @@ averages   tbl = select $
 
 joined         :: (HSTable a, HSTable b) => a -> b -> HSReport
 joined stu mrk = select $
-                 valueOf "Matrikel-Nr" $ valueOf "Vorname" $ valueOf "Name" $ valueOf "Average of Note" $ valueOf "Profilierung" $
+                 valueOf "Matrikel-Nr" $ valueOf "Name" $ valueOf "Average of Note" $ valueOf "Profilierung" $
                  join mrk  "Matrikel-Nr" "Matrikel-Nr" $
                  byrow $
                  from stu
