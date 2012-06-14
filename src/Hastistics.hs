@@ -59,7 +59,7 @@ data HSReport
                     source      :: HSTableHolder,
                     headers     :: [Key],
                     sheaders    :: [Key],
-                    proto       :: HSRow,
+                    proto       :: HSResultPrototype,
                     result      :: HSResult,
                     constraints :: HSConstraint,
                     updater     :: HSResultUpdater,
