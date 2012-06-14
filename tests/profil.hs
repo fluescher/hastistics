@@ -34,26 +34,26 @@ main              = do marksData    <- readFile "noten.csv"
                        let students = studentsFormat studentsData
                        
                        putStrLn "Hastistics Demo. Press any key to continue"
-                       getChar
-
                        putStrLn "Noten Tabelle"
+                       getChar
+
                        print marks
-                       getChar
-
                        putStrLn "Students Tabelle"
+                       getChar
+
                        print students
-                       getChar
-                       
-                       
                        putStrLn "Berechnen der Notenschnitte der einzelnen Studenten..."
+                       getChar
+                       
+                       
                        print (averages marks)
-                       getChar
-
                        putStrLn "Verknüpfen der Tabellen..."
-                       print (joined students (averages marks))
                        getChar
 
+                       print (joined students (averages marks))
                        putStrLn "Gruppieren nach Profilierung..."
+                       getChar
+
                        print (profile (joined students (averages marks)))
                                    
 
