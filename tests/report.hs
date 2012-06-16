@@ -44,6 +44,6 @@ klassenDaten s = csvTable [toHSString, toHSString, toHSString, toHSInteger, toHS
 main :: IO ()
 main = do   dat  <- readFile "chrg.csv"
             --print (simpleReport (klassenDaten dat))
-            print (genderCount (genderGroupe (klassenDaten dat)))
-            print (sampleReport (klassenDaten dat))
-            --print (genderReport (klassenDaten dat))
+            --print (genderCount (genderGroupe (klassenDaten dat)))
+            --print (sampleReport (klassenDaten dat))
+            print (genderReport (klassenDaten dat))
