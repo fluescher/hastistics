@@ -4,6 +4,7 @@ clean:
 	@cabal clean
 
 configure: clean
+	@cabal install --enable-tests
 	@cabal configure --enable-tests
 
 build: configure
